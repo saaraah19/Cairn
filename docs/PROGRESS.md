@@ -2,35 +2,33 @@
 
 ## Current Status
 
-Overall progress: 0%
+Overall progress: ~5%
 Current phase: Phase 0 — Project Foundation
 Current milestone: Phase 0 — Project Foundation
-Status: NOT STARTED
+Status: IMPLEMENTED (pending your review before Phase 1)
 Last updated: 2026-08-28
 
 ## Summary
 
-Application code: Not implemented
-Frontend: Not implemented
-Backend: Not implemented
-Database: Not connected
+Application code: Implemented (Phase 0 scaffold only)
+Frontend: Boots, renders a status page, reaches backend
+Backend: Boots, health endpoint working, error handling in place
+Database: Not connected (MongoDB Atlas URI not yet configured — app runs without it)
 Authentication: Not implemented
 Cloudinary: Not configured
-Testing: Not implemented
+Testing: Manual verification only (see Verification section)
 Deployment: Not implemented
-
-The repository currently contains only project documentation (`Claude.md` and `docs/`). No `client/`, `server/`, `package.json`, environment configuration, or source code exists yet.
 
 ## Milestone Status
 
 | Area | Status | Notes |
 |---|---|---|
 | Product foundation (docs) | IMPLEMENTED | Documentation set is complete and internally consistent. |
-| Project scaffold (Phase 0) | NOT STARTED | No client/server folders, no package.json, no env config. |
+| Project scaffold (Phase 0) | IMPLEMENTED | client/, server/, env config, health endpoint, README all in place and verified. |
 | Authentication | NOT STARTED | |
-| Database | NOT STARTED | No MongoDB Atlas connection exists. |
-| Backend | NOT STARTED | |
-| Frontend | NOT STARTED | |
+| Database | NOT STARTED | Connection code exists; no live Atlas cluster configured yet. |
+| Backend | IN PROGRESS | Only health endpoint + shared infra (error handling, response envelope) exist. |
+| Frontend | IN PROGRESS | Only a status page exists; no navigation/design system yet (Phase 2). |
 | Activity system | NOT STARTED | |
 | Planning | NOT STARTED | |
 | Gear | NOT STARTED | |
@@ -38,7 +36,7 @@ The repository currently contains only project documentation (`Claude.md` and `d
 | Destinations | NOT STARTED | |
 | Statistics | NOT STARTED | |
 | Profile | NOT STARTED | |
-| Testing | NOT STARTED | |
+| Testing | NOT STARTED | No automated tests yet; not expected until relevant feature phases. |
 | Mobile/Responsive | NOT STARTED | |
 | Deployment | NOT STARTED | |
 
@@ -46,16 +44,22 @@ The repository currently contains only project documentation (`Claude.md` and `d
 
 - Product, architecture, UX, roadmap, data model, and future-vision documentation.
 - Documentation cross-reference audit and correction (filenames/paths aligned to actual `docs/` structure).
+- **Phase 0 — Project Foundation:**
+  - Monorepo structure: `client/` (Vite + React) and `server/` (Express)
+  - Backend: Express app with centralized error handling (`middleware/errorHandler.js`, `middleware/notFound.js`), consistent success/error response envelope (`utils/apiResponse.js`), Mongoose connection module that degrades gracefully when `MONGODB_URI` is unset (`config/db.js`), env config loader (`config/env.js`)
+  - `GET /api/health` endpoint reporting server status, timestamp, and live database connection state
+  - Frontend: minimal status page that calls `/api/health` on load and displays connection state (connected / unreachable / checking)
+  - CORS configured and scoped to `CLIENT_URL` with credentials support (for future cookie-based auth)
+  - `.env.example` for both client and server (no secrets committed); `.gitignore` covers `.env`, `node_modules`, `dist`
+  - Root `README.md` with setup instructions for both apps
+  - Folder scaffold for future backend layers per architecture doc §4: `controllers/`, `services/`, `models/`, `routes/`, `validators/`, `middleware/`, `utils/`, `config/` (most still empty, created ahead of need)
 
 ## In Progress
 
-Nothing currently in progress.
+Nothing currently in progress. Phase 0 is complete and awaiting your review before Phase 1 begins.
 
 ## Remaining
 
-Everything defined in `04_DEVELOPMENT_ROADMAP.md`, starting with Phase 0:
-
-- Phase 0 — Project Foundation (repo scaffold, client/server setup, MongoDB Atlas connection, health endpoint, README)
 - Phase 1 — Authentication
 - Phase 2 — Application Shell
 - Phase 3 — Activities
@@ -71,33 +75,48 @@ Everything defined in `04_DEVELOPMENT_ROADMAP.md`, starting with Phase 0:
 
 ## Known Issues
 
-None yet — no application code exists to have issues.
+- No live MongoDB Atlas cluster is configured. The server intentionally boots without one (logs a warning) so Phase 0 doesn't block on external credentials — you'll need to supply a real `MONGODB_URI` in `server/.env` before Phase 1 (user model) can persist anything.
+- No automated tests exist yet (expected at this stage — Phase 0 is infrastructure only).
 
 ## Technical Decisions
 
-None made yet. Key open decisions for upcoming phases:
+- **Plain JavaScript, not TypeScript**, for both client and server — architecture doc doesn't mandate TS; keeps Phase 0 minimal. Reversible later if you want to introduce it.
+- **No npm workspaces / no `concurrently`** — client and server are two independent `package.json`s run in separate terminals. Avoids an extra dependency for something manageable without one.
+- **Express error handling**: a single `ApiError` class + centralized `errorHandler` middleware, matching the `{ success, data }` / `{ success, error: { code, message } }` envelope from `05_DATA_MODEL_AND_API_CONTRACT.md` §52. All future routes should throw `ApiError` rather than sending ad hoc error responses.
+- **dotenv `quiet: true`** — dotenv 17.x prints a promotional "tip" banner on every boot by default; suppressed for clean logs.
 
-- Auth token strategy (access/refresh tokens, cookie configuration) — to be finalized in Phase 1.
-- Google OAuth account-linking-by-email approach — to be finalized in Phase 1.
-- Activity numbering concurrency strategy (atomic counter vs. transaction) — to be finalized in Phase 3.
+Open decisions for upcoming phases (not yet made):
+
+- Auth token strategy (access/refresh tokens, cookie configuration) — Phase 1.
+- Google OAuth account-linking-by-email approach — Phase 1.
+- Activity numbering concurrency strategy (atomic counter vs. transaction) — Phase 3.
 
 ## Files / Areas Recently Changed
 
-- `Claude.md` — corrected stale doc filename reference.
-- `docs/MASTER_IMPLEMENTATION_PROMPT.md` — corrected doc filenames/paths throughout to match actual `docs/` structure.
-- `docs/PROGRESS.md` — initialized (this file).
+- `Claude.md`, `docs/MASTER_IMPLEMENTATION_PROMPT.md` — corrected doc filenames/paths to match actual `docs/` structure.
+- `README.md` — created (root-level setup instructions).
+- `client/` — created (Vite + React scaffold, cleaned of template boilerplate).
+- `server/` — created (Express app, health endpoint, error handling, DB connection module).
+- `docs/PROGRESS.md` — updated to reflect Phase 0 completion (this file).
 
 ## Verification
 
-Build: N/A — no application code exists
-Tests: N/A — no application code exists
-Lint: N/A — no application code exists
-Manual verification: N/A — no application code exists
+Build: `client` — `npm run build` succeeds (verified). `server` — no build step; module import smoke-tested successfully.
+Tests: No automated test suite yet (not expected until feature phases).
+Lint: `client` — `npx oxlint` → 0 warnings, 0 errors (verified).
+Manual verification:
+- Backend boots standalone without `MONGODB_URI` set, logging a clear warning instead of crashing (verified).
+- `GET /api/health` returns `{"success":true,"data":{"status":"ok","timestamp":...,"database":"disconnected"}}` (verified).
+- Unknown route returns `404` with the standard error envelope, no stack trace leaked (verified).
+- Frontend dev server boots and successfully fetches `/api/health` from the backend cross-origin, with CORS correctly scoped to `CLIENT_URL` (verified).
+- Frontend production build (`vite build`) succeeds (verified).
+
+Not yet verified: behavior with a real MongoDB Atlas connection (no cluster configured in this session).
 
 ## Next Recommended Step
 
-Begin Phase 0 — Project Foundation per `docs/04_DEVELOPMENT_ROADMAP.md` §4, once approved by the product owner.
+Review this Phase 0 foundation, then proceed to **Phase 1 — Authentication** per `docs/04_DEVELOPMENT_ROADMAP.md` §5. Before starting, you'll need to provide (or create) a MongoDB Atlas connection string for `server/.env`, and decide whether Google OAuth credentials will be set up now or deferred until email/password auth is working first.
 
 ## Last Handover
 
-No prior handover — this is the project's starting state.
+No prior handover — this is the project's first implemented milestone.

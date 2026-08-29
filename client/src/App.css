@@ -53,3 +53,10 @@ body {
 .status-pill.error .status-dot {
   background: #a13f3f;
 }
+
+.welcome-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}

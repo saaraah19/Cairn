@@ -1,0 +1,89 @@
+/* Cairn design tokens — approved Phase 2 direction.
+   Color: stone/moss/clay, grounded in trail & topographic-map inspiration,
+   deliberately not the cream+terracotta or near-black+neon AI-generated
+   defaults. See docs/PROGRESS.md Phase 2 entry for the full rationale. */
+
+:root {
+  /* Color */
+  --color-bg: #f1f0ea;
+  --color-surface: #faf9f4;
+  --color-ink: #262b22;
+  --color-moss: #3f5b45;
+  --color-moss-deep: #2b4030;
+  --color-clay: #a9683f;
+  --color-mist: #7a8177;
+  --color-danger: #a13f3f;
+  --color-danger-bg: #f5e8e8;
+  --color-danger-border: #e0cfcf;
+
+  /* Type */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Work Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Spacing scale */
+  --space-xs: 0.375rem;
+  --space-sm: 0.75rem;
+  --space-md: 1.25rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --border-hairline: 1px solid #dcdad2;
+
+  /* Elevation — flat by default, one soft shadow for elevated surfaces */
+  --shadow-soft: 0 4px 20px rgba(38, 43, 34, 0.06);
+
+  /* Layout */
+  --sidebar-width: 224px;
+  --bottom-bar-height: 64px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+a {
+  color: var(--color-moss-deep);
+}
+
+/* Respect reduced-motion preferences site-wide. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

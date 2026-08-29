@@ -7,6 +7,10 @@
   margin: 0 auto;
 }
 
+.auth-form h2 {
+  font-size: 1.3rem;
+}
+
 .auth-field {
   display: flex;
   flex-direction: column;
@@ -17,51 +21,57 @@
 .auth-field label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #2f3b34;
+  color: var(--color-ink);
 }
 
 .auth-field input {
   padding: 0.6rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid #cfd8d1;
   font-size: 1rem;
   font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-ink);
 }
 
-.auth-field input:focus {
-  outline: 2px solid #3f7a4a;
+.auth-field input:focus-visible {
+  outline: 2px solid var(--color-moss);
   outline-offset: 1px;
 }
 
 .auth-field-hint {
   font-size: 0.78rem;
-  color: #667069;
+  color: var(--color-mist);
 }
 
 .auth-field-error {
   font-size: 0.8rem;
-  color: #a13f3f;
+  color: var(--color-danger);
 }
 
 .auth-form-error {
   font-size: 0.85rem;
-  color: #a13f3f;
-  background: #f5e8e8;
-  border: 1px solid #e0cfcf;
-  border-radius: 8px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
   padding: 0.6rem 0.75rem;
   text-align: left;
 }
 
 .auth-submit {
   padding: 0.65rem 1rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: none;
-  background: #3f7a4a;
+  background: var(--color-moss);
   color: white;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.auth-submit:hover {
+  background: var(--color-moss-deep);
 }
 
 .auth-submit:disabled {
@@ -72,13 +82,13 @@
 .auth-switch {
   font-size: 0.85rem;
   text-align: center;
-  color: #4a544d;
+  color: var(--color-mist);
 }
 
 .auth-switch button {
   background: none;
   border: none;
-  color: #3f7a4a;
+  color: var(--color-moss-deep);
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -89,7 +99,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #8a938c;
+  color: var(--color-mist);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -100,5 +110,5 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #d8ded9;
+  background: #dcdad2;
 }

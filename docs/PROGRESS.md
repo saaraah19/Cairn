@@ -2,21 +2,21 @@
 
 ## Current Status
 
-Overall progress: ~18%
-Current phase: Phase 1 — Authentication
-Current milestone: Phase 1b — Google OAuth (complete, pending your Google Cloud Console setup + live verification)
-Status: IMPLEMENTED — pending your Google credentials + browser verification
+Overall progress: ~28%
+Current phase: Phase 2 — Application Shell
+Current milestone: Phase 2 — Application Shell
+Status: IMPLEMENTED — pending your visual review in a real browser
 Last updated: 2026-08-29
 
 ## Summary
 
-Application code: Phase 0 scaffold + Phase 1a (email/password, verified working by you) + Phase 1b (Google OAuth, implemented)
-Frontend: Register/login forms, "Sign in with Google" button (auto-hides if unconfigured), session persists across refresh, logout
-Backend: Health endpoint + full email/password auth + Google ID-token verification auth, all sharing the same session/cookie mechanism
-Database: Connected (confirmed working on your machine via MongoDB Atlas)
-Authentication: Email/password — DONE and verified by you. Google OAuth — implemented, needs your Google Cloud credentials to verify live.
+Application code: Phase 0 (foundation) + Phase 1 (auth, verified) + Phase 2 (shell/navigation/design system) implemented
+Frontend: Full navigation shell (sidebar on desktop, bottom tab bar on mobile), five placeholder pages, design token system in place
+Backend: Unchanged since Phase 1b — health + full auth (password + Google)
+Database: Connected (your Atlas cluster)
+Authentication: Complete for V1 scope (email/password + Google), verified working
 Cloudinary: Not configured
-Testing: Manual verification (see below)
+Testing: Manual (lint, build, static bundle-serve check — see Verification)
 Deployment: Not implemented
 
 ## Milestone Status
@@ -25,65 +25,59 @@ Deployment: Not implemented
 |---|---|---|
 | Product foundation (docs) | IMPLEMENTED | |
 | Project scaffold (Phase 0) | IMPLEMENTED | |
-| Authentication — email/password (Phase 1a) | VERIFIED | You confirmed "it works" after running the full flow. |
-| Authentication — Google OAuth (Phase 1b) | IMPLEMENTED | Backend logic + non-network paths verified live (missing-client-ID → 501, missing-credential → 422, regression-tested alongside Phase 1a). The actual Google-token-verification path needs your real `GOOGLE_CLIENT_ID` and a browser to test — see "Next Recommended Step". |
+| Authentication (Phase 1a + 1b) | VERIFIED | Both confirmed working by you. |
+| Application Shell (Phase 2) | IMPLEMENTED | Design system, navigation, routing, five placeholder pages, loading/empty states all built. **Not yet seen in an actual browser** — this sandbox can't render UI, only lint/build/serve-check it. See "Next Recommended Step." |
 | Database | IMPLEMENTED | |
-| Backend | IN PROGRESS | Full auth surface (password + Google) done. No product resources yet. |
-| Frontend | IN PROGRESS | Auth forms + Google button done. No navigation/design system yet (Phase 2). |
+| Backend | IN PROGRESS | No product resources yet (activities, gear, etc.) — Phase 3+. |
+| Frontend | IN PROGRESS | Shell + auth done. Pages are intentionally placeholder content per roadmap §6 ("pages can contain placeholders" at this stage). |
 | Activity system | NOT STARTED | |
 | Planning | NOT STARTED | |
 | Gear | NOT STARTED | |
 | Backpack (Pack My Bag) | NOT STARTED | |
 | Destinations | NOT STARTED | |
 | Statistics | NOT STARTED | |
-| Profile | NOT STARTED | Will need a username-uniqueness-checked `PATCH /api/profile` (username stays editable, per your decision) and a way to show which auth provider(s) are linked. |
+| Profile | IN PROGRESS | Read-only profile page built (name/username/email/linked providers/logout). Editing is Phase 9. |
 | Testing | IN PROGRESS | Manual only. |
-| Mobile/Responsive | NOT STARTED | |
+| Mobile/Responsive | IMPLEMENTED | Sidebar (≥860px) / bottom tab bar (<860px) breakpoint built and reviewed in code; not yet visually confirmed on a real device. |
 | Deployment | NOT STARTED | |
 
 ## Completed
 
-- Phase 0 — Project Foundation (see earlier entries, unchanged).
-- Phase 1a — Email/Password Authentication (see earlier entries; **verified working by you**).
-- **Phase 1b — Google OAuth:**
-  - **Approach**: Option B — `google-auth-library` verifies an ID token that the frontend obtains directly from Google Identity Services (GIS). No server-side redirect flow, no Client Secret needed — only `GOOGLE_CLIENT_ID` (public) on both frontend and backend.
-  - **Product decision (your call)**: Google signups get an auto-generated, unique username instantly (one-click signup preserved); editable anytime afterward via profile, same as password signups.
-  - Backend:
-    - `server/src/utils/googleAuth.js` — verifies the ID token's signature, audience, and `email_verified` flag; returns a trusted profile (`googleId`, `email`, `name`, `picture`). Throws a clean `ApiError` on any invalid/expired/wrong-audience token — never trusts client-supplied identity.
-    - `server/src/utils/generateUsername.js` — derives a pattern-valid, collision-checked username from the email's local part, falling back to a random numeric suffix if taken.
-    - `authenticateOrCreateGoogleUser` in `authService.js` — three-way logic: (1) existing `googleId` → log in, (2) existing account with that email (e.g. originally password-registered) → **link** Google to it rather than creating a duplicate (prevents the duplicate-account problem called out in `02_TECHNICAL_ARCHITECTURE.md` §7), (3) neither → create a new account with an auto-generated username.
-    - `POST /api/auth/google` — accepts `{ credential }`, verifies it, authenticates/creates the user, sets the same access/refresh cookies as password login. Fully interoperable with the existing session/refresh/logout endpoints — a Google-authenticated session behaves identically to a password one everywhere else in the app.
-    - `User` model updated: `passwordHash` is now optional (Google-only accounts have none) — enforced instead at the `registerUser` service level for password signups. `googleId` given a sparse unique index.
-    - `authenticateUser` (password login) now gives a clear, specific error (`NO_PASSWORD_SET`) if someone with a Google-only account tries to log in with a password, rather than crashing on a null hash.
-    - Server boots fine with no `GOOGLE_CLIENT_ID` set; the endpoint returns a clean `501 GOOGLE_AUTH_NOT_CONFIGURED` instead of crashing (verified live).
-  - Frontend:
-    - Google Identity Services script added to `index.html`.
-    - `GoogleSignInButton.jsx` — renders Google's own button via GIS, posts the resulting ID token to the backend, updates auth state on success. **Renders nothing** if `VITE_GOOGLE_CLIENT_ID` isn't set, so the app works cleanly before you've configured Google Cloud.
-    - Wired into both `LoginForm` and `RegisterForm` with a simple "or" divider (works for both flows since the backend transparently creates-or-logs-in).
-  - `server/scripts/test-auth-flow.sh` updated with a note that Google sign-in needs manual browser testing (can't be scripted via curl — requires a real token minted by Google).
+- Phase 0 — Project Foundation (unchanged).
+- Phase 1 — Authentication, email/password + Google OAuth (unchanged; **verified working by you**).
+- **Phase 2 — Application Shell**, built to the approved design direction (stone/moss/clay palette, Fraunces/Work Sans/IBM Plex Mono type, slim sidebar + bottom tab bar, abstract cairn-mark signature element):
+  - **Design tokens** (`client/src/styles/tokens.css`): all approved colors, type, spacing, radius, and shadow as CSS custom properties; global reset; `prefers-reduced-motion` respected site-wide.
+  - **Fonts**: Fraunces (display, headings only), Work Sans (body/UI), IBM Plex Mono (data/stats figures) loaded via Google Fonts in `index.html`.
+  - **Signature element** (`components/Logo.jsx`): abstract stacked-stone cairn mark (SVG, not a literal illustration) used as the wordmark and reused as the active-nav accent — the one deliberately "bold" element, everything else kept quiet per the design brief.
+  - **Navigation** (`layouts/Sidebar.jsx` + `layouts/BottomTabBar.jsx`, sharing `layouts/navItems.js` as a single source of truth): slim left sidebar ≥860px, bottom tab bar <860px — explicitly avoiding the generic top-navbar SaaS pattern per the UX spec. Five hand-rolled line icons (`components/NavIcons.jsx`) rather than adding an icon-library dependency for five icons.
+  - **Routing**: `react-router-dom` wired in `App.jsx` — `AppShell` (`layouts/AppShell.jsx`) wraps an `<Outlet/>` for nested routes: `/`, `/outdoors`, `/gear`, `/statistics`, `/profile`.
+  - **Five pages** (`pages/`): Home, My Outdoors, Gear, Statistics use `EmptyState` with invitational copy per the UX spec's voice guidance ("Your trail starts here," never "No records found"). Profile shows real authenticated-user data (name, username, email, linked auth providers as pills) and hosts the logout action — moved here from the old status page in `App.jsx`.
+  - **Shared primitives**: `LoadingState` and `EmptyState` components (`components/`), required explicitly by the roadmap for this phase.
+  - **Auth pages restyled**: `AuthLayout` (centered card, wordmark, tagline) replaces the old bare status page; `authForms.css` migrated from Phase 1's hardcoded hex values to the new token system for full visual consistency between the logged-out and logged-in experience.
+  - Removed a leftover default Vite template stylesheet (`index.css`) from Phase 0 that had never been cleaned up and was fighting with the real design system.
 
 ## In Progress
 
-Nothing actively in progress. Phase 1b is implemented and awaiting your Google Cloud Console credentials + a browser test.
+Nothing actively in progress. Phase 2 is implemented and awaiting your visual review in a real browser — this sandbox has no way to render UI, only to lint, build, and static-serve-check it.
 
 ## Remaining
 
-- **Immediate**: set up Google Cloud OAuth credentials (see "Next Recommended Step"), add `GOOGLE_CLIENT_ID` to both `server/.env` and `client/.env`, test "Sign in with Google" in the browser
-- Phase 2 — Application Shell
-- Phase 3 through Phase 12 — per `04_DEVELOPMENT_ROADMAP.md`
+- **Immediate**: open the app in a real browser (desktop and mobile-width) and confirm the design reads the way we discussed — see "Next Recommended Step"
+- Phase 3 — Activities (first major product milestone)
+- Phase 4 through Phase 12 — per `04_DEVELOPMENT_ROADMAP.md`
 
 ## Known Issues
 
-- **Google sign-in not yet verified against real Google credentials.** Everything that doesn't require an actual Google ID token was verified live in this session (missing-config → 501, missing-credential → 422, no regressions to Phase 1a). The real flow (click button → Google popup → token → account created/linked) needs your `GOOGLE_CLIENT_ID` and a browser.
-- Same DB-connectivity limitation as before applies to this sandbox — I can't create a real Google-linked user here to inspect in MongoDB myself.
+- **Not visually verified in a browser.** I confirmed the build compiles, lints clean, and serves a valid bundle (checked via `vite preview` + curl), but I have no way to actually render the page and check that the design looks/feels right — that requires your eyes. Please flag anything that's off (spacing, color, font pairing, the sidebar/bottom-bar breakpoint, etc.) and I'll adjust.
+- Mobile bottom-tab-bar and desktop sidebar breakpoint (860px) is a reasonable default, not something confirmed against real devices — easy to adjust if it feels wrong on your phone.
 - No automated test suite yet.
 
 ## Technical Decisions
 
-- **Google OAuth signup username**: auto-generated instantly, editable later — your explicit decision (matches Google's one-click expectation rather than adding a "choose a username" interstitial).
-- **Account linking by email**: if someone registers with password first and later uses "Sign in with Google" with the same (verified) email, the accounts are linked rather than duplicated. This wasn't explicitly asked about — flagging it now: the alternative would be to reject the Google attempt and tell them to log in with their password instead. I went with linking because it matches `02_TECHNICAL_ARCHITECTURE.md` §7's explicit instruction to prevent duplicate accounts for the same email, but let me know if you'd rather block and prompt instead.
-- **No Google Client Secret needed** — corrects earlier guidance from the Phase 1 kickoff, where I initially mentioned an "Authorized redirect URI." That was for a different (redirect-based) flow; with ID-token verification, only the "Authorized JavaScript origin" matters in Google Cloud Console.
-- `passwordHash` relaxed from required to optional at the schema level to accommodate Google-only accounts; enforcement moved to `registerUser`.
+- **Design direction** — approved by you before implementation (color palette, type pairing, sidebar/bottom-bar layout, cairn-mark signature element). Full rationale is in the conversation; summarized in "Completed" above.
+- **No icon library dependency** — five nav icons hand-rolled as inline SVG rather than adding `lucide-react` or similar, per the "avoid unnecessary dependencies" principle.
+- **BackendStatus pill relocated**: the Phase 0 "backend connected" health indicator no longer lives on every authenticated page (would violate the UX spec's "Home should not become an information dump" rule) — it now only appears on the logged-out `AuthLayout` screen, where it's still useful as a dev sanity check.
+- **Profile page built ahead of Phase 9's schedule, minimally**: since real user data was already available from Phase 1, it seemed wasteful to placeholder-empty-state a page we could make genuinely useful (and it needed to host the logout button somewhere sensible). Kept read-only — no editing capability added; that's still Phase 9 as planned. Flagging this as a small scope note since it's not strictly "placeholder only" as the roadmap describes for this phase, though it doesn't add any new product surface beyond what already existed in `App.jsx`.
 
 Open decisions for upcoming phases (not yet made):
 
@@ -91,45 +85,31 @@ Open decisions for upcoming phases (not yet made):
 
 ## Files / Areas Recently Changed
 
-- `server/src/models/User.js` — `passwordHash` optional, `googleId` sparse unique index
-- `server/src/utils/generateUsername.js` — new
-- `server/src/utils/googleAuth.js` — new
-- `server/src/services/authService.js` — added `authenticateOrCreateGoogleUser`, `NO_PASSWORD_SET` guard
-- `server/src/controllers/authController.js` — added `google` action
-- `server/src/routes/auth.routes.js` — added `POST /api/auth/google`
-- `server/src/config/env.js` — added `googleClientId` (no boot-time requirement)
-- `server/.env.example` — documented `GOOGLE_CLIENT_ID`, removed unnecessary Client Secret placeholder
-- `server/scripts/test-auth-flow.sh` — added Google sign-in manual-test note
-- `client/index.html` — added Google Identity Services script tag
-- `client/.env.example` — added `VITE_GOOGLE_CLIENT_ID`
-- `client/src/features/auth/api.js` — added `googleAuthRequest`
-- `client/src/features/auth/AuthContext.jsx` — added `loginWithGoogle`
-- `client/src/features/auth/GoogleSignInButton.jsx` — new
-- `client/src/features/auth/LoginForm.jsx`, `RegisterForm.jsx` — wired in Google button + divider
-- `client/src/features/auth/authForms.css` — added `.auth-divider` styling
+- `client/index.html` — added Google Fonts links
+- `client/src/main.jsx` — now imports `styles/tokens.css` instead of the removed default `index.css`
+- `client/src/index.css` — **removed** (leftover Vite template artifact)
+- `client/src/styles/tokens.css` — new
+- `client/src/components/Logo.jsx`, `NavIcons.jsx`, `LoadingState.jsx`, `EmptyState.jsx`, `states.css` — new
+- `client/src/layouts/` — new: `AppShell.jsx/css`, `Sidebar.jsx/css`, `BottomTabBar.jsx/css`, `AuthLayout.jsx/css`, `navItems.js`
+- `client/src/pages/` — new: `HomePage.jsx`, `MyOutdoorsPage.jsx`, `GearPage.jsx`, `StatisticsPage.jsx`, `ProfilePage.jsx/css`, `pages.css`
+- `client/src/App.jsx` — rewired for routing + AppShell + AuthGate (replaces the old single-page status/auth view)
+- `client/src/App.css` — trimmed to only what's still used (status pill, full-page-center)
+- `client/src/features/auth/authForms.css` — migrated to design tokens
 
 ## Verification
 
-Build: `client` — `npm run build` succeeds (verified). `server` — all files pass `node --check`, app assembly verified.
-Tests: No automated test suite yet.
-Lint: `client` — `npx oxlint` → 0 warnings, 0 errors (verified).
-Manual verification (live, this session):
-- Regression pass confirming Phase 1a still works: health, 404, register validation, unauthenticated `/me` — all correct
-- `POST /api/auth/google` without `GOOGLE_CLIENT_ID` configured — clean `501 GOOGLE_AUTH_NOT_CONFIGURED` (verified)
-- `POST /api/auth/google` with missing `credential` field — clean `422 VALIDATION_ERROR` (verified)
-
-Not yet verified (requires your Google Cloud credentials + a browser): actual Google sign-in creating a new account, linking to an existing password account, and logging in an existing Google account a second time.
+Build: `client` — `npm run build` succeeds (verified).
+Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 24 files (verified).
+Bundle-serve check: `vite preview` + curl confirmed `index.html`, the JS bundle (200, ~244KB), and CSS all serve correctly with resolved font/color variables (verified).
+Visual/UX review: **not done** — requires a real browser, which this sandbox doesn't have. This is the primary thing to check before moving on.
 
 ## Next Recommended Step
 
-1. **Set up Google Cloud OAuth credentials** (I walked you through this earlier in the conversation — Google Cloud Console → OAuth consent screen → Credentials → Create OAuth Client ID, Web application). One correction to that earlier guidance: you only need to set the **Authorized JavaScript origin** (`http://localhost:5173`) — skip the redirect URI, it's not used by this approach.
-2. Add the resulting Client ID to **both**:
-   - `server/.env` → `GOOGLE_CLIENT_ID=...`
-   - `client/.env` → `VITE_GOOGLE_CLIENT_ID=...` (same value)
-3. Run both dev servers, open the app, click "Sign in with Google," confirm you land in the authenticated view and a new user document appears in MongoDB with `authProviders: ["google"]`.
-4. Try it a second time (should log the same account back in), and try registering with a password using the *same* email as an existing password account then later linking via Google, if you want to confirm the linking path.
-5. Report back — then we move to **Phase 2 (Application Shell)**.
+1. Pull this update, `npm install` in `client/` if needed (no new dependencies this phase, but worth confirming), `npm run dev`
+2. Open it in a browser: check the desktop sidebar, then narrow the window below ~860px (or open on your phone) to confirm the bottom tab bar takes over
+3. Click through all five nav destinations, check the Profile page shows your real account info correctly, confirm logout still works
+4. Tell me what to adjust, if anything — then we move to **Phase 3 — Activities**, the first major product milestone
 
 ## Last Handover
 
-No prior handover — continuing directly within the same conversation from Phase 1a.
+No prior handover — continuing directly within the same conversation from Phase 1b.

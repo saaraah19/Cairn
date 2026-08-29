@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './features/auth/AuthContext.jsx'
 import { useAuth } from './features/auth/useAuth.js'
 import { RegisterForm } from './features/auth/RegisterForm.jsx'
 import { LoginForm } from './features/auth/LoginForm.jsx'
+import { AuthLayout } from './layouts/AuthLayout.jsx'
+import { AppShell } from './layouts/AppShell.jsx'
+import { LoadingState } from './components/LoadingState.jsx'
+import { HomePage } from './pages/HomePage.jsx'
+import { MyOutdoorsPage } from './pages/MyOutdoorsPage.jsx'
+import { GearPage } from './pages/GearPage.jsx'
+import { StatisticsPage } from './pages/StatisticsPage.jsx'
+import { ProfilePage } from './pages/ProfilePage.jsx'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
@@ -31,79 +40,61 @@ function BackendStatus() {
     }
   }, [])
 
-  if (error) {
-    return (
-      <span className="status-pill error">
-        <span className="status-dot" />
-        Backend unreachable: {error}
-      </span>
-    )
-  }
-
-  if (health) {
-    return (
-      <span className="status-pill">
-        <span className="status-dot" />
-        Backend connected — {health.data?.status ?? 'ok'}
-      </span>
-    )
-  }
-
-  return (
-    <span className="status-pill">
-      <span className="status-dot" />
-      Checking backend connection…
-    </span>
-  )
+  if (error) return <span className="status-pill error">Backend unreachable: {error}</span>
+  if (health) return <span className="status-pill">Backend connected</span>
+  return <span className="status-pill">Checking backend…</span>
 }
 
-function AuthenticatedView() {
-  const { user, logout } = useAuth()
+function AuthGate() {
+  const [mode, setMode] = useState('login')
 
   return (
-    <div className="welcome-card">
-      <h2>Welcome, {user.name}</h2>
-      <p className="auth-field-hint">@{user.username}</p>
-      <button className="auth-submit" onClick={logout}>
-        Log out
-      </button>
-    </div>
+    <AuthLayout>
+      {mode === 'login' ? (
+        <LoginForm onSwitchToRegister={() => setMode('register')} />
+      ) : (
+        <RegisterForm onSwitchToLogin={() => setMode('login')} />
+      )}
+      <BackendStatus />
+    </AuthLayout>
   )
 }
 
 function AppContent() {
   const { user, isLoading } = useAuth()
-  const [mode, setMode] = useState('login')
+
+  if (isLoading) {
+    return (
+      <div className="full-page-center">
+        <LoadingState label="Loading Cairn…" />
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthGate />
+  }
 
   return (
-    <main className="status-page">
-      <h1>Cairn</h1>
-      <p>Project foundation — Phase 1a: Authentication</p>
-
-      <BackendStatus />
-
-      {isLoading && <p>Loading…</p>}
-
-      {!isLoading && !user && (
-        <>
-          {mode === 'login' ? (
-            <LoginForm onSwitchToRegister={() => setMode('register')} />
-          ) : (
-            <RegisterForm onSwitchToLogin={() => setMode('login')} />
-          )}
-        </>
-      )}
-
-      {!isLoading && user && <AuthenticatedView />}
-    </main>
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/outdoors" element={<MyOutdoorsPage />} />
+        <Route path="/gear" element={<GearPage />} />
+        <Route path="/statistics" element={<StatisticsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
+    </Routes>
   )
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 

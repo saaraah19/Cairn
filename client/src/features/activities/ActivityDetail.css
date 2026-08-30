@@ -108,6 +108,36 @@
   color: var(--color-danger);
 }
 
+.gear-used-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.gear-used-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.3rem;
+  border-radius: 999px;
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  text-decoration: none;
+  color: var(--color-ink);
+  font-size: 0.82rem;
+}
+
+.gear-used-chip:hover {
+  border-color: var(--color-moss);
+}
+
+.gear-used-chip img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .confirm-dialog-backdrop {
   position: fixed;
   inset: 0;

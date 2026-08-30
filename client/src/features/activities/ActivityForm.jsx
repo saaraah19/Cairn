@@ -8,6 +8,8 @@ import {
   listCompanionsRequest,
   createCompanionRequest,
 } from './api.js'
+import { listGearRequest } from '../gear/api.js'
+import { CATEGORY_LABELS } from '../gear/formatters.js'
 import './ActivityForm.css'
 import '../../pages/pages.css'
 import '../auth/authForms.css'
@@ -33,6 +35,7 @@ const emptyForm = {
   rating: '',
   challenges: '',
   notes: '',
+  gearItemIds: [],
   visibility: 'private',
 }
 
@@ -59,6 +62,7 @@ function activityToForm(activity) {
     rating: activity.review?.rating ?? '',
     challenges: activity.review?.challenges ?? '',
     notes: activity.review?.notes ?? '',
+    gearItemIds: (activity.gearItemIds ?? []).map((g) => (typeof g === 'string' ? g : g._id)),
     visibility: activity.visibility ?? 'private',
   }
 }
@@ -72,16 +76,27 @@ export function ActivityForm({ activity, activityId }) {
   const [form, setForm] = useState(activity ? activityToForm(activity) : emptyForm)
   const [groups, setGroups] = useState([])
   const [companionSuggestions, setCompanionSuggestions] = useState([])
+  const [gearOptions, setGearOptions] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     listGroupsRequest().then((d) => setGroups(d.groups)).catch(() => {})
     listCompanionsRequest().then((d) => setCompanionSuggestions(d.companions)).catch(() => {})
+    listGearRequest({ limit: 50 }).then((d) => setGearOptions(d.gear)).catch(() => {})
   }, [])
 
   function set(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
+  }
+
+  function toggleGear(gearId) {
+    setForm((f) => ({
+      ...f,
+      gearItemIds: f.gearItemIds.includes(gearId)
+        ? f.gearItemIds.filter((id) => id !== gearId)
+        : [...f.gearItemIds, gearId],
+    }))
   }
 
   async function resolveGroupId() {
@@ -141,6 +156,7 @@ export function ActivityForm({ activity, activityId }) {
           challenges: form.challenges.trim(),
           notes: form.notes.trim(),
         },
+        gearItemIds: form.gearItemIds,
         visibility: form.visibility,
       }
 
@@ -291,6 +307,29 @@ export function ActivityForm({ activity, activityId }) {
             </select>
           </div>
         </div>
+      </section>
+
+      <section className="form-section">
+        <h2>Gear</h2>
+        {gearOptions.length === 0 ? (
+          <p style={{ color: 'var(--color-mist)', fontSize: '0.85rem' }}>
+            No gear in your closet yet — add some from the Gear tab to select it here.
+          </p>
+        ) : (
+          <div className="gear-checkbox-grid">
+            {gearOptions.map((g) => (
+              <label key={g._id} className="gear-checkbox">
+                <input
+                  type="checkbox"
+                  checked={form.gearItemIds.includes(g._id)}
+                  onChange={() => toggleGear(g._id)}
+                />
+                <span>{g.name}</span>
+                <span className="gear-checkbox-category">{CATEGORY_LABELS[g.category]}</span>
+              </label>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="form-section">

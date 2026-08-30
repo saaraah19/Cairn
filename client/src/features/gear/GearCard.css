@@ -1,0 +1,50 @@
+.gear-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.gear-card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.gear-card-photo {
+  height: 100px;
+  background: var(--color-bg);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-mist);
+  font-size: 0.75rem;
+}
+
+.gear-card-body {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.gear-card-category {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-moss-deep);
+}
+
+.gear-card-body h3 {
+  font-size: 1rem;
+  margin: 0.2rem 0;
+}
+
+.gear-card-meta {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  color: var(--color-mist);
+}

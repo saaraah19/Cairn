@@ -62,6 +62,7 @@ const baseActivityFields = {
   costDzd: z.number().min(0).nullable().optional(),
   review: reviewSchema,
   destinationId: z.string().nullable().optional(),
+  gearItemIds: z.array(z.string()).max(50).optional(),
   visibility: z.enum(['private', 'public']).optional(),
 }
 

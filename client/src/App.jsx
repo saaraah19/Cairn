@@ -15,6 +15,9 @@ import { ProfilePage } from './pages/ProfilePage.jsx'
 import { ActivityCreatePage } from './features/activities/ActivityCreatePage.jsx'
 import { ActivityEditPage } from './features/activities/ActivityEditPage.jsx'
 import { ActivityDetail } from './features/activities/ActivityDetail.jsx'
+import { GearCreatePage } from './features/gear/GearCreatePage.jsx'
+import { GearEditPage } from './features/gear/GearEditPage.jsx'
+import { GearDetail } from './features/gear/GearDetail.jsx'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
@@ -87,6 +90,9 @@ function AppContent() {
         <Route path="/outdoors/:id/edit" element={<ActivityEditPage />} />
         <Route path="/outdoors/:id" element={<ActivityDetail />} />
         <Route path="/gear" element={<GearPage />} />
+        <Route path="/gear/new" element={<GearCreatePage />} />
+        <Route path="/gear/:id/edit" element={<GearEditPage />} />
+        <Route path="/gear/:id" element={<GearDetail />} />
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

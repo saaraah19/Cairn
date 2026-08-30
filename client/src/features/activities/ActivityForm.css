@@ -87,3 +87,32 @@
   font-size: 0.88rem;
   cursor: pointer;
 }
+
+.gear-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-xs);
+}
+
+.gear-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #dcdad2;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.gear-checkbox:has(input:checked) {
+  border-color: var(--color-moss);
+  background: #eef3ef;
+}
+
+.gear-checkbox-category {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: var(--color-mist);
+  text-transform: uppercase;
+}

@@ -2,22 +2,20 @@
 
 ## Current Status
 
-Overall progress: ~49%
-Current phase: Phase 3 — Activities
-Current milestone: Phase 3 — Activities (COMPLETE — Cloudinary verified working by you, lightbox added)
-Status: VERIFIED — Phase 3 fully closed out
+Overall progress: ~58%
+Current phase: Phase 4 — Gear
+Current milestone: Phase 4 — Gear (COMPLETE)
+Status: IMPLEMENTED — pending your live-DB verification and browser review
 Last updated: 2026-08-30
 
 ## Summary
 
-Application code: Phase 0-2 (verified) + Phase 3 fully complete, including Cloudinary photo uploads
-Frontend: Activity list/form/detail (Phase 3 core, verified by you) + photo gallery (upload, cover selection, remove) on the detail page; real cover photos now shown on cards and hero
-Backend: Activity CRUD (verified by you) + Photo model/service/routes wired to Cloudinary, with graceful degradation when unconfigured
-Database: Connected (your Atlas cluster)
-Authentication: Unchanged, verified
-Cloudinary: **Not yet configured on your end** — you have credentials, need to add them to `server/.env`. Everything is built and ready.
-Testing: Manual — validation/auth/degradation paths verified live; actual Cloudinary upload flow needs your credentials to test
-Deployment: Not implemented
+Application code: Phase 0-3 (fully verified by you) + Phase 4 Gear implemented
+Frontend: Gear list (search/category filter/pagination), create/edit form, detail page with usage history and single-photo management; Activity form now has a Gear-selection section; Activity detail shows "Gear used" with links to each item
+Backend: GearItem CRUD with ownership enforcement, single-photo Cloudinary upload (reusing the pipeline from Phase 3), usage-history query derived from Activity.gearItemIds, Activity↔Gear ownership verification
+Database: Connected (your Atlas cluster) — new GearItem collection
+Authentication/Activities/Photos: Unchanged, all previously verified
+Testing: Manual — validation/auth-guarding verified live; DB-backed happy path needs your run
 
 ## Milestone Status
 
@@ -27,100 +25,102 @@ Deployment: Not implemented
 | Project scaffold (Phase 0) | IMPLEMENTED | |
 | Authentication (Phase 1) | VERIFIED | |
 | Application Shell (Phase 2) | VERIFIED | |
-| **Activities (Phase 3)** | **VERIFIED — fully complete** | CRUD/list/detail/form and photo upload/cover/remove all confirmed working by you (root cause of an earlier Cloudinary 403 was a credential misconfiguration on your end, now resolved). Photo lightbox added as a small follow-up polish item. |
-| Database | IMPLEMENTED | Added `Photo` collection this slice. |
-| Backend | IN PROGRESS | Auth + Activities + Photos + lightweight Groups/Companions done. Gear, Planned Activities, Destinations, Statistics not started. |
-| Frontend | IN PROGRESS | Shell + auth + Activities + Photos done. |
+| Activities (Phase 3) | VERIFIED | Including Cloudinary photos and lightbox. |
+| **Gear (Phase 4)** | **IMPLEMENTED** | CRUD, list, detail, form, photo, usage history, and Activity↔Gear wiring all built. Validation/auth verified live. DB-backed happy path and browser review both need you. |
+| Database | IMPLEMENTED | Added `GearItem` collection this phase. |
+| Backend | IN PROGRESS | Auth + Activities + Photos + Gear + lightweight Groups/Companions done. Planned Activities, Destinations, Statistics not started. |
+| Frontend | IN PROGRESS | Shell + auth + Activities + Gear done. |
 | Planning | NOT STARTED | |
-| Gear | NOT STARTED | |
-| Backpack (Pack My Bag) | NOT STARTED | |
+| Gear | **DONE** | |
+| Backpack (Pack My Bag) | NOT STARTED | Depends on Planned Activities (Phase 5) existing first. |
 | Destinations | NOT STARTED | |
 | Statistics | NOT STARTED | |
 | Profile | IN PROGRESS | Unchanged (read-only) since Phase 2. |
 | Testing | IN PROGRESS | Manual only. |
-| Mobile/Responsive | IMPLEMENTED (Phase 2 shell) | Photo grid uses the same responsive shell; not checked on an actual device yet. |
+| Mobile/Responsive | IMPLEMENTED (Phase 2 shell) | Gear pages use the same responsive shell/components as Activities; not checked on an actual device yet. |
 | Deployment | NOT STARTED | |
 
 ## Completed
 
-- Phases 0-2 (verified working by you).
-- Phase 3 core — Activities CRUD, list, form, detail (verified working by you).
-- **Phase 3 — Activity Photos (this slice):**
+- Phases 0-3 (fully verified working by you, including Cloudinary photos and the lightbox addition).
+- **Phase 4 — Gear:**
   - **Backend:**
-    - `Photo` model (`server/src/models/Photo.js`) per the data model doc §35 — metadata + Cloudinary references only, no binary data in MongoDB.
-    - `config/cloudinary.js` — configures the Cloudinary SDK from env vars, returns `null` if unconfigured rather than throwing, so the server always boots cleanly regardless of Cloudinary setup state.
-    - `photoService.js`: upload (verifies activity ownership before touching Cloudinary at all; auto-sets the first photo as cover; enforces a 20-photo-per-activity cap — my assumption, not specified in the docs), list, set-cover (unsets the previous cover, keeps `Activity.coverPhotoId` in sync), delete (removes from Cloudinary *and* Mongo; if the deleted photo was the cover, automatically promotes the next-oldest remaining photo — a UX nicety not explicitly required but avoids leaving an activity with a "missing" cover), and a cascade-delete helper wired into `activityService.deleteActivity` so deleting an activity now cleans up all its Cloudinary assets too.
-    - Upload validation: JPEG/PNG/WebP only, 10MB max, handled via `multer` (memory storage — buffers stream straight to Cloudinary, never touch disk) with errors routed through the same centralized error handler as everything else.
-    - Routes: `POST/GET /api/activities/:id/photos`, `PATCH /api/activities/:id/photos/:photoId/cover`, `DELETE /api/photos/:photoId`. Every route ownership-checks before doing anything.
-    - Server boots fine and every photo endpoint returns a clean `501 PHOTOS_NOT_CONFIGURED` if Cloudinary env vars are missing — verified live, same graceful-degradation pattern as Google OAuth.
-    - `server/scripts/test-photo-flow.sh` — an 11-step script (needs a real image file as an argument) covering auto-cover-on-first-upload, manual cover change, auto-promote-on-cover-delete, and cascade-delete verification (asks you to confirm in your Cloudinary dashboard that the folder is actually empty afterward).
+    - `GearItem` model (`server/src/models/GearItem.js`) per the data model doc §29-32 — different physical items with the same brand/name stay independently identifiable (no deduplication logic anywhere), `quantity` field for identical-item cases (e.g. socks).
+    - Zod validators for create/update (partial)/list-query.
+    - `gearService.js`: CRUD with ownership enforcement (same always-404 pattern as activities), search + category filtering, single-photo upload/replace/remove (reusing the exact Cloudinary pipeline built in Phase 3 — extracted the buffer-upload logic into a shared `utils/cloudinaryUpload.js` rather than duplicating it), and the **usage-history query** — derived live from `Activity.gearItemIds`, never stored redundantly on the gear item itself, matching `05_DATA_MODEL_AND_API_CONTRACT.md` §33 exactly.
+    - **Gear deletion cleans up dangling references**: deleting a `GearItem` now `$pull`s it from every activity's `gearItemIds` array that referenced it, so activities never point at gear that no longer exists. This wasn't explicitly specified in the docs (which only say activity deletion must *not* delete gear) — flagging it as my judgment call for data integrity, verified in the test script.
+    - `POST/GET/PATCH/DELETE /api/gear`, `/api/gear/:id`, `GET /api/gear/:id/usage`, `POST/DELETE /api/gear/:id/photo`.
+    - **Activity ↔ Gear wiring**: `activityValidators.js` now accepts `gearItemIds`; `activityService.js` verifies every referenced gear item actually belongs to the authenticated user before attaching it (rejects with `403 INVALID_GEAR` otherwise — same pattern as the existing group-ownership check), and populates `gearItemIds` with `name/category/photo` on activity fetch so the detail page can render them without extra requests.
+    - `server/scripts/test-gear-flow.sh` — 11 steps covering distinct-items-not-merged, category filtering, usage history across two activities, cross-user gear rejection, and dangling-reference cleanup after deletion.
   - **Frontend:**
-    - `PhotoGallery.jsx` — grid of uploaded photos with hover-revealed "Set cover" / "Remove" actions, an upload tile, inline error display. Mirrors the backend's auto-promote-on-cover-delete behavior client-side so the UI doesn't need a refetch to stay in sync.
-    - `ActivityDetail.jsx` — hero now shows the real cover photo when one exists (graceful gradient fallback otherwise, per `03_UX_DESIGN_SPEC.md` §16), Photos section wired in.
-    - `ActivityCard.jsx` — list cards now show the real cover photo thumbnail instead of the gradient placeholder, once an activity has one.
-    - Photo upload lives only on the detail page (not the create form) since Cloudinary needs a real `activityId` to attach to — the create flow already navigates straight to the detail page on save, so this doesn't add friction.
-  - **Photo Lightbox** (small follow-up, same session): `PhotoLightbox.jsx` — clicking any photo thumbnail in the gallery opens a full-size overlay viewer with prev/next navigation (click, arrow buttons, or ← → keys), a counter, and Escape/click-outside to close. The hover-action overlay (Set cover/Remove) was refined so only the buttons themselves capture clicks (`pointer-events: none` on the overlay, `auto` on the buttons) — previously the invisible overlay would have silently swallowed clicks meant for the image underneath. Not wired into the activity-detail hero image yet (would need lightbox state lifted up a level) — flagging as an easy future addition if wanted, not done now since the gallery view covers the actual request.
+    - `GearList.jsx`/`GearCard.jsx` — reuses the exact search/filter/pagination toolbar and card-grid styling already built for Activities, kept visually consistent rather than inventing a parallel pattern.
+    - `GearForm.jsx` — sectioned (Item / Purchase / Notes), reuses `ActivityForm.css` and the auth-error banner style for consistency.
+    - `GearDetail.jsx` — full item info, single-photo upload/replace/remove, and the **usage history list** linking to every activity that used it (the actual point of this phase, per the roadmap's done-when criteria).
+    - `ActivityForm.jsx` — new Gear section (checkbox grid, fetches up to 50 items from the closet — see Known Issues for the pagination caveat) between Conditions and Review.
+    - `ActivityDetail.jsx` — new "Gear used" section showing linked chips (with thumbnail if the gear has a photo) back to each gear item's detail page.
 
 ## In Progress
 
-Nothing actively in progress. Phase 3 is fully implemented and awaiting your Cloudinary credentials in `server/.env` before the upload flow can be verified end-to-end.
+Nothing actively in progress. Phase 4 is implemented and awaiting your live-DB verification + browser review.
 
 ## Remaining
 
-- **Immediate**: add your Cloudinary credentials to `server/.env`, run `bash scripts/test-photo-flow.sh /path/to/a/photo.jpg`, then try it in the browser
-- **Phase 3 is then fully complete** — this closes out the roadmap's first major checkpoint
-- Phase 4 — Gear (next major milestone)
-- Phase 5 through Phase 12 — per `04_DEVELOPMENT_ROADMAP.md`
+- **Immediate**: run `server/scripts/test-gear-flow.sh` against your live database; try the full flow in the browser (add gear, use it on two activities, check usage history, delete gear and confirm the activity's gear list updates)
+- Phase 5 — Planned Activities
+- Phase 6 — Pack My Bag (depends on Phase 5)
+- Phase 7 through Phase 12 — per `04_DEVELOPMENT_ROADMAP.md`
 
 ## Known Issues
 
-- **Cloudinary confirmed working end-to-end by you.** Root cause of the earlier `403` was a credential misconfiguration on your Cloudinary setup (not a bug in the integration) — now resolved.
-- Same "not visually reviewed against every screen size" caveat as prior phases for the new lightbox specifically — worth a quick check on mobile, though it was built mobile-width-aware (smaller nav buttons under 600px).
-- 20-photos-per-activity cap is my own assumption, not from the docs — easy to change if you want a different limit.
+- **DB-backed gear CRUD and Activity↔Gear flow not yet verified by you.** Same sandbox limitation as every prior phase — everything not requiring a live DB write was verified: auth-guarding on every new endpoint, all validation-error paths (missing name, bad category enum on both create and list-filter), and app assembly. The actual create→use-on-two-activities→check-usage-history→delete-and-confirm-cleanup flow needs your run. Script provided.
+- **Gear selection in the Activity form caps at 50 items** (`listGearRequest({ limit: 50 })`, the max our list endpoint allows) with no pagination in the picker itself. Fine for a realistic personal gear closet; if you end up with more than 50 items you'd need to prune before older ones become unselectable from new activities. Flagging as a known scale limit, not a bug.
+- Condition enum (`new/good/worn/needs_repair/retired`) is my own assumption, not from the docs — easy to change.
+- Not yet visually reviewed in a browser (same standing caveat since Phase 2).
 - No automated test suite yet.
 
 ## Technical Decisions
 
-- **Upload path**: browser → backend (multipart, in-memory buffer via multer) → Cloudinary → backend saves metadata → MongoDB. Matches `02_TECHNICAL_ARCHITECTURE.md` §25 exactly — your credentials never reach the browser.
-- **Auto-cover-on-first-upload and auto-promote-on-cover-delete**: neither was explicitly specified in the docs. I added both because leaving an activity with photos but no designated cover (or forcing you to manually re-pick a cover every time you delete one) seemed like an obvious rough edge — flagging both as judgment calls in case you'd prefer more explicit control.
-- **20-photo cap per activity** — arbitrary reasonable default, not from the docs.
-- **Photo upload only from the detail page**, not the create form — a practical constraint (Cloudinary needs a real `activityId`), not a design preference. The create flow's existing redirect-to-detail-on-save already accommodates this naturally.
+- **Shared Cloudinary upload helper extracted** (`utils/cloudinaryUpload.js`) rather than duplicating the buffer-upload-stream logic between `photoService.js` (activity gallery) and `gearService.js` (single gear photo) — same underlying operation, different calling context.
+- **Gear photo is single-image, replace-on-upload** — unlike the activity photo gallery, matching the data model doc's simpler `photo` field (not a `Photo[]` collection) for `GearItem`.
+- **Dangling-reference cleanup on gear deletion** (see Completed) — a data-integrity call I made without being explicitly told to, flagged above.
+- **Gear-ownership verification mirrors the existing group-ownership pattern** exactly (`assertGearOwnership` alongside the pre-existing `assertGroupOwnership` in `activityService.js`) — same shape, same error style, for consistency.
+- **50-item cap on the gear picker** in the activity form — a practical default tied to the list endpoint's existing max page size, not a deliberate product decision.
 
 Open decisions for upcoming phases: none currently.
 
 ## Files / Areas Recently Changed
 
 **Backend — new:**
-`models/Photo.js`, `config/cloudinary.js`, `services/photoService.js`, `controllers/photoController.js`, `middleware/upload.js`, `routes/activityPhoto.routes.js`, `routes/photo.routes.js`, `scripts/test-photo-flow.sh`
+`models/GearItem.js`, `validators/gearValidators.js`, `services/gearService.js`, `controllers/gearController.js`, `routes/gear.routes.js`, `utils/cloudinaryUpload.js`, `scripts/test-gear-flow.sh`
 
 **Backend — modified:**
-`services/activityService.js` (populates `coverPhotoId`/`social.groupId` on list+get, cascades photo cleanup on delete), `routes/activity.routes.js` (nested photo routes), `app.js` (mounted photo routes), `config/env.js` (Cloudinary vars), `.env.example` (documented + uncommented Cloudinary vars)
+`app.js` (mounted gear routes), `services/photoService.js` (uses shared upload helper), `services/activityService.js` (gear-ownership verification, `gearItemIds` populate), `validators/activityValidators.js` (accepts `gearItemIds`)
 
 **Frontend — new:**
-`features/activities/PhotoGallery.jsx/css`, `features/activities/PhotoLightbox.jsx/css`
+`features/gear/` — `api.js`, `formatters.js`, `GearCard.jsx/css`, `GearList.jsx`, `GearForm.jsx`, `GearDetail.jsx/css`, `GearCreatePage.jsx`, `GearEditPage.jsx`
 
 **Frontend — modified:**
-`features/activities/api.js` (photo endpoints), `ActivityDetail.jsx` (real hero image, Photos section, cover-change sync), `ActivityCard.jsx` (real thumbnail), `PhotoGallery.css` (overlay pointer-events fix so image clicks reach the lightbox)
+`App.jsx` (gear routes), `pages/GearPage.jsx` (renders GearList), `features/activities/ActivityForm.jsx/css` (Gear section), `features/activities/ActivityDetail.jsx/css` (Gear used section)
 
 ## Verification
 
 Build: `client` — `npm run build` succeeds (verified).
-Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 33 files (verified).
-Backend: all files pass `node --check`; app assembles cleanly — including confirming the `activityService.js` ↔ `photoService.js` circular import (needed for cascade-delete) resolves without issue (verified).
+Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 42 files (verified — including fixing one more `set-state-in-effect` warning in `GearDetail.jsx` with the same derived-loading-state pattern used in Phase 3).
+Backend: all files pass `node --check`; app assembles cleanly with gear routes mounted (verified).
 Manual verification (live, this session):
-- Full regression pass: health, auth `/me`, activity validation, activities-list auth-guard — all still correct after this slice's changes
-- Every photo endpoint correctly returns `401` without authentication
-- Photo upload with valid auth but no Cloudinary configured → clean `501 PHOTOS_NOT_CONFIGURED` (checked before any DB write)
-- Photo upload with a non-image file → `422 INVALID_FILE_TYPE`, rejected by multer's file filter before reaching any other logic
+- Full regression pass: health, auth `/me`, activities-list auth-guard, activity validation, photo-upload auth-guard — all still correct after this phase's changes
+- Every new gear endpoint correctly returns `401` without authentication
+- Gear validation: missing name, invalid category enum (on both create and list-filter) — all correct `422`s
 
-Not yet verified (requires your Cloudinary credentials): actual upload succeeding, auto-cover-on-first-upload, manual cover switching, auto-promote-on-cover-delete, and — importantly — that deleting an activity actually removes its assets from Cloudinary (please check your dashboard, not just that the API call succeeds). Script provided: `server/scripts/test-photo-flow.sh`.
+Not yet verified (requires your live database): actual gear CRUD, distinct-items-not-merged behavior, usage history across multiple activities, cross-user gear-attachment rejection, and dangling-reference cleanup on gear deletion. Script provided: `server/scripts/test-gear-flow.sh`. Also not yet verified: how any of this looks/feels in a browser.
 
 ## Next Recommended Step
 
-1. Pull this update, `npm run build` (client) to pick up the lightbox — no new dependencies, no env changes needed
-2. Quick browser check: open an activity with a few photos, click a thumbnail, confirm the lightbox opens with working prev/next (click, arrows, and ← → keys) and closes on Escape/click-outside/× button
-3. **Phase 3 is now fully complete and verified** — first roadmap checkpoint closed. Ready to start **Phase 4 — Gear** whenever you are.
+1. Pull this update, `npm install` in `server/` if needed (no new dependencies this phase)
+2. Run `bash scripts/test-gear-flow.sh` from `server/` against your live database
+3. In the browser: add a couple of gear items, use one on two different activities, open the gear item and confirm the usage history shows both, try deleting a gear item that's in use and confirm the activity's "Gear used" section updates
+4. Report back — then we start **Phase 5 — Planned Activities**
 
 ## Last Handover
 
-No prior handover — continuing directly within the same conversation from Phase 3 core.
+No prior handover — continuing directly within the same conversation from Phase 3.

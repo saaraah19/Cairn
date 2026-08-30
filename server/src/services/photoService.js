@@ -1,8 +1,8 @@
-import { Readable } from 'node:stream'
 import { Photo } from '../models/Photo.js'
 import { Activity } from '../models/Activity.js'
 import { getCloudinary } from '../config/cloudinary.js'
 import { ApiError } from '../utils/apiResponse.js'
+import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.js'
 import { getOwnedActivity } from './activityService.js'
 
 const MAX_PHOTOS_PER_ACTIVITY = 20
@@ -17,19 +17,6 @@ function requireCloudinary() {
     )
   }
   return cloudinary
-}
-
-function uploadBufferToCloudinary(cloudinary, buffer, folder) {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: 'image' },
-      (error, result) => {
-        if (error) return reject(error)
-        resolve(result)
-      }
-    )
-    Readable.from(buffer).pipe(uploadStream)
-  })
 }
 
 export async function uploadActivityPhoto(userId, activityId, file) {

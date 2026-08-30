@@ -169,6 +169,20 @@ export function ActivityDetail() {
         </div>
       )}
 
+      {activity.gearItemIds?.length > 0 && (
+        <div className="detail-section">
+          <h2>Gear used</h2>
+          <div className="gear-used-list">
+            {activity.gearItemIds.map((g) => (
+              <Link key={g._id} to={`/gear/${g._id}`} className="gear-used-chip">
+                {g.photo?.secureUrl && <img src={g.photo.secureUrl} alt="" />}
+                {g.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {activity.costDzd != null && (
         <div className="detail-section">
           <h2>Cost</h2>

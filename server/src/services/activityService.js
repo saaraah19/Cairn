@@ -1,5 +1,6 @@
 import { Activity } from '../models/Activity.js'
 import { Group } from '../models/Group.js'
+import { GearItem } from '../models/GearItem.js'
 import { getNextSequenceValue } from '../models/Counter.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { deleteAllPhotosForActivity } from './photoService.js'
@@ -17,6 +18,16 @@ async function assertGroupOwnership(userId, groupId) {
   }
 }
 
+// Same idea for gear: every referenced GearItem must belong to this user.
+// Checks the count matches rather than fetching each one individually.
+async function assertGearOwnership(userId, gearItemIds) {
+  if (!gearItemIds || gearItemIds.length === 0) return
+  const ownedCount = await GearItem.countDocuments({ _id: { $in: gearItemIds }, userId })
+  if (ownedCount !== gearItemIds.length) {
+    throw new ApiError(403, 'INVALID_GEAR', 'One or more gear items do not belong to you.')
+  }
+}
+
 // destinationId ownership cannot be verified yet — the Destination model
 // doesn't exist until Phase 7. Format is validated so the field can't be
 // used to store garbage; full ownership check is a TODO for Phase 7.
@@ -28,6 +39,7 @@ function assertDestinationIdFormat(destinationId) {
 
 export async function createActivity(userId, data) {
   await assertGroupOwnership(userId, data.social?.groupId)
+  await assertGearOwnership(userId, data.gearItemIds)
   assertDestinationIdFormat(data.destinationId)
 
   const activityNumber = await getNextSequenceValue(userId, 'activityNumber')
@@ -86,6 +98,7 @@ export async function getOwnedActivity(userId, activityId) {
   const activity = await Activity.findOne({ _id: activityId, userId })
     .populate('social.groupId', 'name')
     .populate('coverPhotoId', 'secureUrl')
+    .populate('gearItemIds', 'name category photo')
   if (!activity) {
     throw new ApiError(404, 'NOT_FOUND', 'Activity not found.')
   }
@@ -97,6 +110,9 @@ export async function updateActivity(userId, activityId, data) {
 
   if (data.social?.groupId !== undefined) {
     await assertGroupOwnership(userId, data.social.groupId)
+  }
+  if (data.gearItemIds !== undefined) {
+    await assertGearOwnership(userId, data.gearItemIds)
   }
   if (data.destinationId !== undefined) {
     assertDestinationIdFormat(data.destinationId)
@@ -127,5 +143,4 @@ export async function deleteActivity(userId, activityId) {
   const activity = await getOwnedActivity(userId, activityId)
   await deleteAllPhotosForActivity(activityId)
   await activity.deleteOne()
-  // Gear-relationship cleanup will be added in Phase 4.
 }

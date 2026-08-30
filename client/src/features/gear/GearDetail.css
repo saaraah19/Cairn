@@ -1,0 +1,61 @@
+.gear-detail-photo {
+  height: 200px;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  background-size: cover;
+  background-position: center;
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-mist);
+  position: relative;
+}
+
+.gear-photo-upload-label {
+  position: absolute;
+  bottom: var(--space-sm);
+  right: var(--space-sm);
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+.gear-photo-upload-label input {
+  display: none;
+}
+
+.usage-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.usage-list li a {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  text-decoration: none;
+  color: var(--color-ink);
+  font-size: 0.88rem;
+}
+
+.usage-list li a:hover {
+  border-color: var(--color-moss);
+}
+
+.usage-count {
+  font-family: var(--font-data);
+  color: var(--color-mist);
+  font-size: 0.8rem;
+}

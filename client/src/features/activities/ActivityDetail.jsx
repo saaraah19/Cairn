@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getActivityRequest, deleteActivityRequest } from './api.js'
+import { PhotoGallery } from './PhotoGallery.jsx'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import {
@@ -77,7 +78,18 @@ export function ActivityDetail() {
 
   return (
     <div>
-      <div className="activity-detail-hero" />
+      <div
+        className="activity-detail-hero"
+        style={
+          activity.coverPhotoId?.secureUrl
+            ? {
+                backgroundImage: `url(${activity.coverPhotoId.secureUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : undefined
+        }
+      />
 
       <div className="activity-detail-title-row">
         <div>
@@ -184,6 +196,19 @@ export function ActivityDetail() {
           <p>{review.notes}</p>
         </div>
       )}
+
+      <div className="detail-section">
+        <h2>Photos</h2>
+        <PhotoGallery
+          activityId={id}
+          onCoverChange={(photo) =>
+            setActivity((a) => ({
+              ...a,
+              coverPhotoId: photo ? { _id: photo._id, secureUrl: photo.secureUrl } : null,
+            }))
+          }
+        />
+      </div>
 
       {showConfirm && (
         <div className="confirm-dialog-backdrop" role="dialog" aria-modal="true">

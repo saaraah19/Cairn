@@ -16,6 +16,9 @@ export const env = {
   jwtAccessSecret: required('JWT_ACCESS_SECRET', ''),
   jwtRefreshSecret: required('JWT_REFRESH_SECRET', ''),
   googleClientId: required('GOOGLE_CLIENT_ID', ''),
+  cloudinaryCloudName: required('CLOUDINARY_CLOUD_NAME', ''),
+  cloudinaryApiKey: required('CLOUDINARY_API_KEY', ''),
+  cloudinaryApiSecret: required('CLOUDINARY_API_SECRET', ''),
 }
 
 if (env.nodeEnv === 'production' && (!env.jwtAccessSecret || !env.jwtRefreshSecret)) {

@@ -2,6 +2,7 @@ import { Activity } from '../models/Activity.js'
 import { Group } from '../models/Group.js'
 import { getNextSequenceValue } from '../models/Counter.js'
 import { ApiError } from '../utils/apiResponse.js'
+import { deleteAllPhotosForActivity } from './photoService.js'
 
 const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i
 
@@ -64,7 +65,7 @@ export async function listActivities(userId, query) {
   const skip = (page - 1) * limit
 
   const [items, total] = await Promise.all([
-    Activity.find(filter).sort(sortMap[sort]).skip(skip).limit(limit),
+    Activity.find(filter).sort(sortMap[sort]).skip(skip).limit(limit).populate('coverPhotoId', 'secureUrl'),
     Activity.countDocuments(filter),
   ])
 
@@ -82,10 +83,9 @@ export async function listActivities(userId, query) {
 // Never leaks whether an activity exists for another user — always 404,
 // never a distinguishable 403 (docs/02_TECHNICAL_ARCHITECTURE.md §9).
 export async function getOwnedActivity(userId, activityId) {
-  const activity = await Activity.findOne({ _id: activityId, userId }).populate(
-    'social.groupId',
-    'name'
-  )
+  const activity = await Activity.findOne({ _id: activityId, userId })
+    .populate('social.groupId', 'name')
+    .populate('coverPhotoId', 'secureUrl')
   if (!activity) {
     throw new ApiError(404, 'NOT_FOUND', 'Activity not found.')
   }
@@ -125,7 +125,7 @@ export async function updateActivity(userId, activityId, data) {
 
 export async function deleteActivity(userId, activityId) {
   const activity = await getOwnedActivity(userId, activityId)
+  await deleteAllPhotosForActivity(activityId)
   await activity.deleteOne()
-  // Photo/Cloudinary cleanup and gear-relationship cleanup will be added
-  // once those features exist (Phase 3 photo slice, Phase 4).
+  // Gear-relationship cleanup will be added in Phase 4.
 }

@@ -66,3 +66,34 @@ export function listCompanionsRequest() {
 export function createCompanionRequest(name) {
   return request('/api/companions', { method: 'POST', body: JSON.stringify({ name }) })
 }
+
+export function listPhotosRequest(activityId) {
+  return request(`/api/activities/${activityId}/photos`)
+}
+
+export async function uploadPhotoRequest(activityId, file) {
+  const formData = new FormData()
+  formData.append('photo', file)
+
+  const res = await fetch(`${API_BASE_URL}/api/activities/${activityId}/photos`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData, // no Content-Type header — browser sets the multipart boundary
+  })
+
+  const body = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    throw new Error(body?.error?.message || 'Something went wrong. Please try again.')
+  }
+
+  return body?.data
+}
+
+export function setCoverPhotoRequest(activityId, photoId) {
+  return request(`/api/activities/${activityId}/photos/${photoId}/cover`, { method: 'PATCH' })
+}
+
+export function deletePhotoRequest(photoId) {
+  return request(`/api/photos/${photoId}`, { method: 'DELETE' })
+}

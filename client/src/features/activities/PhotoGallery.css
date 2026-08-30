@@ -1,0 +1,89 @@
+.photo-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.photo-tile {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: var(--border-hairline);
+}
+
+.photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-tile-cover-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: var(--color-moss);
+  color: white;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.photo-tile-actions {
+  position: absolute;
+  inset: 0;
+  background: rgba(38, 43, 34, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.photo-tile:hover .photo-tile-actions,
+.photo-tile:focus-within .photo-tile-actions {
+  opacity: 1;
+}
+
+.photo-tile-actions button {
+  background: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.photo-upload-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: 110px;
+  border: 2px dashed #cfd8d1;
+  border-radius: var(--radius-md);
+  color: var(--color-mist);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: center;
+  padding: var(--space-sm);
+}
+
+.photo-upload-label:hover {
+  border-color: var(--color-moss);
+  color: var(--color-moss-deep);
+}
+
+.photo-upload-label input {
+  display: none;
+}
+
+.photo-gallery-error {
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  margin: var(--space-xs) 0 0;
+}

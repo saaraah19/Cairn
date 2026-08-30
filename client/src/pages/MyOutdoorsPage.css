@@ -1,0 +1,22 @@
+.outdoors-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  border-bottom: var(--border-hairline);
+}
+
+.outdoors-tab {
+  background: none;
+  border: none;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-mist);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.outdoors-tab.active {
+  color: var(--color-moss-deep);
+  border-bottom-color: var(--color-moss);
+}

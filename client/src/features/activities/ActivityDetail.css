@@ -1,0 +1,144 @@
+.activity-detail-hero {
+  height: 180px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-moss) 0%, var(--color-moss-deep) 100%);
+  margin-bottom: var(--space-md);
+}
+
+.activity-detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
+}
+
+.activity-detail-title-row h1 {
+  font-size: 1.5rem;
+}
+
+.activity-detail-meta {
+  color: var(--color-mist);
+  font-size: 0.9rem;
+  margin: 0.3rem 0 var(--space-md);
+}
+
+.activity-detail-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.activity-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.stat-tile {
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  text-align: center;
+}
+
+.stat-tile-value {
+  font-family: var(--font-data);
+  font-size: 1.1rem;
+  color: var(--color-ink);
+  display: block;
+}
+
+.stat-tile-label {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detail-section {
+  margin-bottom: var(--space-lg);
+}
+
+.detail-section h2 {
+  font-size: 0.95rem;
+  color: var(--color-moss-deep);
+  margin-bottom: var(--space-xs);
+}
+
+.detail-section p {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+
+.detail-kv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  font-size: 0.9rem;
+}
+
+.detail-kv div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.detail-kv span:first-child {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  text-transform: uppercase;
+}
+
+.icon-button {
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.icon-button.danger {
+  color: var(--color-danger);
+}
+
+.confirm-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(38, 43, 34, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  z-index: 100;
+}
+
+.confirm-dialog {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  max-width: 360px;
+  box-shadow: var(--shadow-soft);
+}
+
+.confirm-dialog h3 {
+  margin-bottom: var(--space-xs);
+}
+
+.confirm-dialog p {
+  color: var(--color-mist);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-md);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}

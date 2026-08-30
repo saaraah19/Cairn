@@ -18,3 +18,22 @@ export function validateBody(schema) {
     next()
   }
 }
+
+// Same idea for query params. Stores the parsed/coerced result on
+// req.validatedQuery rather than overwriting req.query, since Express 5
+// exposes req.query as a getter that isn't safely reassignable.
+export function validateQuery(schema) {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.query)
+
+    if (!result.success) {
+      const firstIssue = result.error.issues[0]
+      return next(
+        new ApiError(422, 'VALIDATION_ERROR', firstIssue?.message ?? 'Invalid query parameters.')
+      )
+    }
+
+    req.validatedQuery = result.data
+    next()
+  }
+}

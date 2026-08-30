@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/useAuth.js'
 import { EmptyState } from '../components/EmptyState.jsx'
 import './pages.css'
@@ -17,9 +18,9 @@ export function HomePage() {
         title="Your trail starts here."
         description="Log your first outdoor adventure and it'll show up here — along with what's coming up and how your journey is unfolding."
         action={
-          <button className="primary-action" disabled title="Coming in Phase 3">
+          <Link to="/outdoors/new" className="primary-action" style={{ textDecoration: 'none' }}>
             Log an activity
-          </button>
+          </Link>
         }
       />
     </div>

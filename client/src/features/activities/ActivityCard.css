@@ -1,0 +1,68 @@
+.activity-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.activity-card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.activity-card-photo-placeholder {
+  height: 120px;
+  background: linear-gradient(135deg, var(--color-moss) 0%, var(--color-moss-deep) 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: var(--space-sm);
+}
+
+.activity-card-elevation {
+  font-family: var(--font-data);
+  font-size: 0.78rem;
+  color: white;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.activity-card-body {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.activity-card-heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.activity-card-number {
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  color: var(--color-mist);
+}
+
+.activity-card-heading h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.activity-card-meta {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-mist);
+}
+
+.activity-card-stats {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  color: var(--color-ink);
+}

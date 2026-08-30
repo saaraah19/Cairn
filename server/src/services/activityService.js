@@ -1,0 +1,131 @@
+import { Activity } from '../models/Activity.js'
+import { Group } from '../models/Group.js'
+import { getNextSequenceValue } from '../models/Counter.js'
+import { ApiError } from '../utils/apiResponse.js'
+
+const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i
+
+// Verifies a referenced Group belongs to the authenticated user before it
+// can be attached to an activity — never trust a client-supplied ID
+// (docs/05_DATA_MODEL_AND_API_CONTRACT.md §55).
+async function assertGroupOwnership(userId, groupId) {
+  if (!groupId) return
+  const group = await Group.findOne({ _id: groupId, userId })
+  if (!group) {
+    throw new ApiError(403, 'INVALID_GROUP', 'That group does not belong to you.')
+  }
+}
+
+// destinationId ownership cannot be verified yet — the Destination model
+// doesn't exist until Phase 7. Format is validated so the field can't be
+// used to store garbage; full ownership check is a TODO for Phase 7.
+function assertDestinationIdFormat(destinationId) {
+  if (destinationId && !OBJECT_ID_PATTERN.test(destinationId)) {
+    throw new ApiError(422, 'VALIDATION_ERROR', 'Invalid destination reference.')
+  }
+}
+
+export async function createActivity(userId, data) {
+  await assertGroupOwnership(userId, data.social?.groupId)
+  assertDestinationIdFormat(data.destinationId)
+
+  const activityNumber = await getNextSequenceValue(userId, 'activityNumber')
+
+  return Activity.create({
+    ...data,
+    userId,
+    activityNumber,
+  })
+}
+
+export async function listActivities(userId, query) {
+  const { page, limit, search, type, difficulty, wilaya, groupId, dateFrom, dateTo, sort } = query
+
+  const filter = { userId }
+  if (type) filter.type = type
+  if (difficulty) filter['trail.difficulty'] = difficulty
+  if (wilaya) filter['location.wilaya'] = new RegExp(wilaya, 'i')
+  if (groupId) filter['social.groupId'] = groupId
+  if (dateFrom || dateTo) {
+    filter.date = {}
+    if (dateFrom) filter.date.$gte = new Date(dateFrom)
+    if (dateTo) filter.date.$lte = new Date(dateTo)
+  }
+  if (search) filter.$text = { $search: search }
+
+  const sortMap = {
+    newest: { date: -1 },
+    oldest: { date: 1 },
+    distance: { 'trail.distanceKm': -1 },
+    rating: { 'review.rating': -1 },
+    elevation: { 'trail.elevationGainM': -1 },
+  }
+
+  const skip = (page - 1) * limit
+
+  const [items, total] = await Promise.all([
+    Activity.find(filter).sort(sortMap[sort]).skip(skip).limit(limit),
+    Activity.countDocuments(filter),
+  ])
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  }
+}
+
+// Never leaks whether an activity exists for another user — always 404,
+// never a distinguishable 403 (docs/02_TECHNICAL_ARCHITECTURE.md §9).
+export async function getOwnedActivity(userId, activityId) {
+  const activity = await Activity.findOne({ _id: activityId, userId }).populate(
+    'social.groupId',
+    'name'
+  )
+  if (!activity) {
+    throw new ApiError(404, 'NOT_FOUND', 'Activity not found.')
+  }
+  return activity
+}
+
+export async function updateActivity(userId, activityId, data) {
+  const activity = await getOwnedActivity(userId, activityId)
+
+  if (data.social?.groupId !== undefined) {
+    await assertGroupOwnership(userId, data.social.groupId)
+  }
+  if (data.destinationId !== undefined) {
+    assertDestinationIdFormat(data.destinationId)
+  }
+
+  // Deep-merge nested objects rather than overwriting them wholesale, so a
+  // partial update (e.g. only `trail.distanceKm`) doesn't wipe out sibling
+  // fields the client didn't send.
+  for (const [key, value] of Object.entries(data)) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      activity[key] &&
+      typeof activity[key].toObject === 'function'
+    ) {
+      activity[key] = { ...activity[key].toObject(), ...value }
+    } else {
+      activity[key] = value
+    }
+  }
+
+  await activity.save()
+  return activity
+}
+
+export async function deleteActivity(userId, activityId) {
+  const activity = await getOwnedActivity(userId, activityId)
+  await activity.deleteOne()
+  // Photo/Cloudinary cleanup and gear-relationship cleanup will be added
+  // once those features exist (Phase 3 photo slice, Phase 4).
+}

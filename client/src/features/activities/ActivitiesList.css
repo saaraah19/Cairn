@@ -1,0 +1,60 @@
+.activities-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.activities-toolbar input,
+.activities-toolbar select {
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #cfd8d1;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.activities-toolbar input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.activities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.activities-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  font-size: 0.85rem;
+  color: var(--color-mist);
+}
+
+.activities-pagination button {
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.activities-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.activities-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}

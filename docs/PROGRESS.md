@@ -2,10 +2,10 @@
 
 ## Current Status
 
-Overall progress: ~48%
+Overall progress: ~49%
 Current phase: Phase 3 — Activities
-Current milestone: Phase 3 — Activities (COMPLETE, including photos)
-Status: IMPLEMENTED — pending your Cloudinary credentials + live verification
+Current milestone: Phase 3 — Activities (COMPLETE — Cloudinary verified working by you, lightbox added)
+Status: VERIFIED — Phase 3 fully closed out
 Last updated: 2026-08-30
 
 ## Summary
@@ -27,7 +27,7 @@ Deployment: Not implemented
 | Project scaffold (Phase 0) | IMPLEMENTED | |
 | Authentication (Phase 1) | VERIFIED | |
 | Application Shell (Phase 2) | VERIFIED | |
-| **Activities (Phase 3)** | **IMPLEMENTED — core VERIFIED by you, photos pending your Cloudinary setup** | CRUD/list/detail/form confirmed working. Photo upload/cover/remove built and unit-verified (validation, auth, graceful degradation) but not yet exercised against real Cloudinary — needs your credentials. |
+| **Activities (Phase 3)** | **VERIFIED — fully complete** | CRUD/list/detail/form and photo upload/cover/remove all confirmed working by you (root cause of an earlier Cloudinary 403 was a credential misconfiguration on your end, now resolved). Photo lightbox added as a small follow-up polish item. |
 | Database | IMPLEMENTED | Added `Photo` collection this slice. |
 | Backend | IN PROGRESS | Auth + Activities + Photos + lightweight Groups/Companions done. Gear, Planned Activities, Destinations, Statistics not started. |
 | Frontend | IN PROGRESS | Shell + auth + Activities + Photos done. |
@@ -59,6 +59,7 @@ Deployment: Not implemented
     - `ActivityDetail.jsx` — hero now shows the real cover photo when one exists (graceful gradient fallback otherwise, per `03_UX_DESIGN_SPEC.md` §16), Photos section wired in.
     - `ActivityCard.jsx` — list cards now show the real cover photo thumbnail instead of the gradient placeholder, once an activity has one.
     - Photo upload lives only on the detail page (not the create form) since Cloudinary needs a real `activityId` to attach to — the create flow already navigates straight to the detail page on save, so this doesn't add friction.
+  - **Photo Lightbox** (small follow-up, same session): `PhotoLightbox.jsx` — clicking any photo thumbnail in the gallery opens a full-size overlay viewer with prev/next navigation (click, arrow buttons, or ← → keys), a counter, and Escape/click-outside to close. The hover-action overlay (Set cover/Remove) was refined so only the buttons themselves capture clicks (`pointer-events: none` on the overlay, `auto` on the buttons) — previously the invisible overlay would have silently swallowed clicks meant for the image underneath. Not wired into the activity-detail hero image yet (would need lightbox state lifted up a level) — flagging as an easy future addition if wanted, not done now since the gallery view covers the actual request.
 
 ## In Progress
 
@@ -73,8 +74,8 @@ Nothing actively in progress. Phase 3 is fully implemented and awaiting your Clo
 
 ## Known Issues
 
-- **Cloudinary upload flow not yet verified against a real account.** This sandbox has no network path to Cloudinary (same limitation as MongoDB Atlas and Google). Everything not requiring a real upload was verified live: auth-guarding on all photo endpoints, the `501` graceful-degradation response, and file-type rejection (tested with a `.txt` file, correctly rejected before ever reaching the "is Cloudinary configured" check). The actual upload → Cloudinary → MongoDB round-trip needs your credentials and a real image file.
-- Same "not visually reviewed in a browser" caveat as every phase since Phase 2 — please check how the photo grid actually looks and feels, especially on mobile where hover-to-reveal actions don't really work (tap targets should still be reachable, but it's worth a look).
+- **Cloudinary confirmed working end-to-end by you.** Root cause of the earlier `403` was a credential misconfiguration on your Cloudinary setup (not a bug in the integration) — now resolved.
+- Same "not visually reviewed against every screen size" caveat as prior phases for the new lightbox specifically — worth a quick check on mobile, though it was built mobile-width-aware (smaller nav buttons under 600px).
 - 20-photos-per-activity cap is my own assumption, not from the docs — easy to change if you want a different limit.
 - No automated test suite yet.
 
@@ -96,10 +97,10 @@ Open decisions for upcoming phases: none currently.
 `services/activityService.js` (populates `coverPhotoId`/`social.groupId` on list+get, cascades photo cleanup on delete), `routes/activity.routes.js` (nested photo routes), `app.js` (mounted photo routes), `config/env.js` (Cloudinary vars), `.env.example` (documented + uncommented Cloudinary vars)
 
 **Frontend — new:**
-`features/activities/PhotoGallery.jsx/css`
+`features/activities/PhotoGallery.jsx/css`, `features/activities/PhotoLightbox.jsx/css`
 
 **Frontend — modified:**
-`features/activities/api.js` (photo endpoints), `ActivityDetail.jsx` (real hero image, Photos section, cover-change sync), `ActivityCard.jsx` (real thumbnail)
+`features/activities/api.js` (photo endpoints), `ActivityDetail.jsx` (real hero image, Photos section, cover-change sync), `ActivityCard.jsx` (real thumbnail), `PhotoGallery.css` (overlay pointer-events fix so image clicks reach the lightbox)
 
 ## Verification
 
@@ -116,11 +117,9 @@ Not yet verified (requires your Cloudinary credentials): actual upload succeedin
 
 ## Next Recommended Step
 
-1. Add your three Cloudinary values to `server/.env` (already documented in `.env.example`)
-2. `npm install` in `server/` (new deps: `cloudinary`, `multer`)
-3. Run `bash scripts/test-activity-flow.sh` first if you haven't already this session (unrelated regression check, quick), then `bash scripts/test-photo-flow.sh /path/to/a/real/photo.jpg`
-4. In the browser: open an activity, upload a couple of photos, switch the cover, delete one, delete the whole activity — then check your Cloudinary dashboard to confirm cleanup actually happened
-5. Once confirmed, **Phase 3 is fully complete** — first roadmap checkpoint closed. Then we move to **Phase 4 — Gear**.
+1. Pull this update, `npm run build` (client) to pick up the lightbox — no new dependencies, no env changes needed
+2. Quick browser check: open an activity with a few photos, click a thumbnail, confirm the lightbox opens with working prev/next (click, arrows, and ← → keys) and closes on Escape/click-outside/× button
+3. **Phase 3 is now fully complete and verified** — first roadmap checkpoint closed. Ready to start **Phase 4 — Gear** whenever you are.
 
 ## Last Handover
 

@@ -5,6 +5,7 @@ import {
   setCoverPhotoRequest,
   deletePhotoRequest,
 } from './api.js'
+import { PhotoLightbox } from './PhotoLightbox.jsx'
 import './PhotoGallery.css'
 
 export function PhotoGallery({ activityId, onCoverChange }) {
@@ -12,6 +13,7 @@ export function PhotoGallery({ activityId, onCoverChange }) {
   const [error, setError] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
   const [busyPhotoId, setBusyPhotoId] = useState(null)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -91,9 +93,9 @@ export function PhotoGallery({ activityId, onCoverChange }) {
   return (
     <div>
       <div className="photo-gallery-grid">
-        {photos.map((photo) => (
+        {photos.map((photo, i) => (
           <div key={photo._id} className="photo-tile">
-            <img src={photo.secureUrl} alt="" />
+            <img src={photo.secureUrl} alt="" onClick={() => setLightboxIndex(i)} />
             {photo.isCover && <span className="photo-tile-cover-badge">Cover</span>}
             <div className="photo-tile-actions">
               {!photo.isCover && (
@@ -128,6 +130,15 @@ export function PhotoGallery({ activityId, onCoverChange }) {
       </div>
 
       {error && <p className="photo-gallery-error">{error}</p>}
+
+      {lightboxIndex !== null && lightboxIndex < photos.length && (
+        <PhotoLightbox
+          photos={photos}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
+      )}
     </div>
   )
 }

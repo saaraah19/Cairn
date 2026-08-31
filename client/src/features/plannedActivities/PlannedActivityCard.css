@@ -1,0 +1,44 @@
+.planned-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.planned-card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.planned-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.planned-card h3 {
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.planned-status-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  color: white;
+  white-space: nowrap;
+}
+
+.planned-card-meta {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-mist);
+}

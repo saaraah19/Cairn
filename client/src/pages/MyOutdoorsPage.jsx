@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ActivitiesList } from '../features/activities/ActivitiesList.jsx'
+import { PlannedActivitiesList } from '../features/plannedActivities/PlannedActivitiesList.jsx'
 import { EmptyState } from '../components/EmptyState.jsx'
 import './pages.css'
 import './MyOutdoorsPage.css'
@@ -34,12 +35,7 @@ export function MyOutdoorsPage() {
 
       {tab === 'activities' && <ActivitiesList />}
 
-      {tab === 'planned' && (
-        <EmptyState
-          title="Planned activities are coming soon."
-          description="This will let you plan future adventures ahead of time — it's the next major milestone after Activities."
-        />
-      )}
+      {tab === 'planned' && <PlannedActivitiesList />}
 
       {tab === 'destinations' && (
         <EmptyState

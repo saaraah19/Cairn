@@ -8,6 +8,7 @@ import {
   listCompanionsRequest,
   createCompanionRequest,
 } from './api.js'
+import { completePlannedActivityRequest } from '../plannedActivities/api.js'
 import { listGearRequest } from '../gear/api.js'
 import { CATEGORY_LABELS } from '../gear/formatters.js'
 import './ActivityForm.css'
@@ -69,11 +70,13 @@ function activityToForm(activity) {
 
 const numOrNull = (v) => (v === '' || v === null || v === undefined ? null : Number(v))
 
-export function ActivityForm({ activity, activityId }) {
+export function ActivityForm({ activity, activityId, prefill, plannedActivityId }) {
   const navigate = useNavigate()
   const isEditing = Boolean(activityId)
 
-  const [form, setForm] = useState(activity ? activityToForm(activity) : emptyForm)
+  const [form, setForm] = useState(
+    activity ? activityToForm(activity) : { ...emptyForm, ...prefill }
+  )
   const [groups, setGroups] = useState([])
   const [companionSuggestions, setCompanionSuggestions] = useState([])
   const [gearOptions, setGearOptions] = useState([])
@@ -165,6 +168,15 @@ export function ActivityForm({ activity, activityId }) {
         : await createActivityRequest(payload)
 
       persistNewCompanions(companionNames) // best-effort, don't block navigation
+
+      if (!isEditing && plannedActivityId) {
+        // Links the plan to this new activity and marks it completed. If
+        // this fails, the activity itself was still created successfully —
+        // don't block navigation on it, just surface the issue.
+        await completePlannedActivityRequest(plannedActivityId, result.activity._id).catch((err) => {
+          console.error('Failed to link planned activity:', err.message)
+        })
+      }
 
       navigate(`/outdoors/${result.activity._id}`)
     } catch (err) {

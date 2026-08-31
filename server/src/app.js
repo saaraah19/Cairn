@@ -9,6 +9,7 @@ import photoRoutes from './routes/photo.routes.js'
 import groupRoutes from './routes/group.routes.js'
 import companionRoutes from './routes/companion.routes.js'
 import gearRoutes from './routes/gear.routes.js'
+import plannedActivityRoutes from './routes/plannedActivity.routes.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -26,9 +27,9 @@ export function createApp() {
   app.use('/api/groups', groupRoutes)
   app.use('/api/companions', companionRoutes)
   app.use('/api/gear', gearRoutes)
+  app.use('/api/planned-activities', plannedActivityRoutes)
 
   // Future route mounts:
-  // app.use('/api/planned-activities', plannedActivityRoutes)
   // app.use('/api/destinations', destinationRoutes)
   // ...
 

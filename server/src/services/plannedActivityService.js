@@ -1,10 +1,11 @@
 import { PlannedActivity } from '../models/PlannedActivity.js'
 import { Activity } from '../models/Activity.js'
 import { ApiError } from '../utils/apiResponse.js'
-import { assertGroupOwnership, assertDestinationIdFormat } from '../utils/ownershipChecks.js'
+import { assertGroupOwnership, assertGearOwnership, assertDestinationIdFormat } from '../utils/ownershipChecks.js'
 
 export async function createPlannedActivity(userId, data) {
   await assertGroupOwnership(userId, data.social?.groupId)
+  await assertGearOwnership(userId, data.packedGearItemIds)
   assertDestinationIdFormat(data.destinationId)
 
   return PlannedActivity.create({ ...data, userId })
@@ -39,6 +40,7 @@ export async function getOwnedPlannedActivity(userId, plannedActivityId) {
   const plan = await PlannedActivity.findOne({ _id: plannedActivityId, userId })
     .populate('social.groupId', 'name')
     .populate('completedActivityId', 'activityNumber name date')
+    .populate('packedGearItemIds', 'name category weightGrams photo')
   if (!plan) {
     throw new ApiError(404, 'NOT_FOUND', 'Planned activity not found.')
   }
@@ -50,6 +52,9 @@ export async function updatePlannedActivity(userId, plannedActivityId, data) {
 
   if (data.social?.groupId !== undefined) {
     await assertGroupOwnership(userId, data.social.groupId)
+  }
+  if (data.packedGearItemIds !== undefined) {
+    await assertGearOwnership(userId, data.packedGearItemIds)
   }
   if (data.destinationId !== undefined) {
     assertDestinationIdFormat(data.destinationId)

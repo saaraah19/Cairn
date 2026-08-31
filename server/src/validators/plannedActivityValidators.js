@@ -32,6 +32,7 @@ const baseFields = {
   expectedDifficulty: z.enum(['easy', 'moderate', 'hard', 'very_hard']).nullable().optional(),
   notes: z.string().trim().max(2000).optional(),
   status: z.enum(['planned', 'ready', 'completed', 'cancelled']).optional(),
+  packedGearItemIds: z.array(z.string()).max(100).optional(),
 }
 
 export const createPlannedActivitySchema = z.object(baseFields)

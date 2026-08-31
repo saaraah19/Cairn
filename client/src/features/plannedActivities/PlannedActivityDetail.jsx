@@ -4,6 +4,7 @@ import { getPlannedActivityRequest, deletePlannedActivityRequest } from './api.j
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import { formatDate, TYPE_LABELS, DIFFICULTY_LABELS } from '../activities/formatters.js'
+import { formatWeight } from '../gear/formatters.js'
 import { STATUS_LABELS, STATUS_COLORS } from './formatters.js'
 import '../activities/ActivityDetail.css'
 
@@ -100,6 +101,11 @@ export function PlannedActivityDetail() {
             </button>
           )}
           {!isCompleted && (
+            <Link to={`/outdoors/planned/${id}/pack`} className="icon-button">
+              Prepare my bag
+            </Link>
+          )}
+          {!isCompleted && (
             <Link to={`/outdoors/planned/${id}/edit`} className="icon-button">
               Edit
             </Link>
@@ -118,6 +124,30 @@ export function PlannedActivityDetail() {
               #{plan.completedActivityId.activityNumber} {plan.completedActivityId.name}
             </Link>
           </p>
+        </div>
+      )}
+
+      {plan.packedGearItemIds?.length > 0 && (
+        <div className="detail-section">
+          <h2>
+            Packed bag
+            <span className="usage-count">
+              {' '}
+              · {plan.packedGearItemIds.length} item
+              {plan.packedGearItemIds.length === 1 ? '' : 's'} ·{' '}
+              {formatWeight(
+                plan.packedGearItemIds.reduce((sum, g) => sum + (g.weightGrams ?? 0), 0)
+              ) ?? '0 g'}
+            </span>
+          </h2>
+          <div className="gear-used-list">
+            {plan.packedGearItemIds.map((g) => (
+              <Link key={g._id} to={`/gear/${g._id}`} className="gear-used-chip">
+                {g.photo?.secureUrl && <img src={g.photo.secureUrl} alt="" />}
+                {g.name}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

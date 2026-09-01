@@ -22,6 +22,9 @@ import { PlannedActivityCreatePage } from './features/plannedActivities/PlannedA
 import { PlannedActivityEditPage } from './features/plannedActivities/PlannedActivityEditPage.jsx'
 import { PlannedActivityDetail } from './features/plannedActivities/PlannedActivityDetail.jsx'
 import { PackMyBagPage } from './features/plannedActivities/PackMyBagPage.jsx'
+import { DestinationCreatePage } from './features/destinations/DestinationCreatePage.jsx'
+import { DestinationEditPage } from './features/destinations/DestinationEditPage.jsx'
+import { DestinationDetail } from './features/destinations/DestinationDetail.jsx'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
@@ -95,6 +98,9 @@ function AppContent() {
         <Route path="/outdoors/planned/:id/edit" element={<PlannedActivityEditPage />} />
         <Route path="/outdoors/planned/:id/pack" element={<PackMyBagPage />} />
         <Route path="/outdoors/planned/:id" element={<PlannedActivityDetail />} />
+        <Route path="/outdoors/destinations/new" element={<DestinationCreatePage />} />
+        <Route path="/outdoors/destinations/:id/edit" element={<DestinationEditPage />} />
+        <Route path="/outdoors/destinations/:id" element={<DestinationDetail />} />
         <Route path="/outdoors/:id/edit" element={<ActivityEditPage />} />
         <Route path="/outdoors/:id" element={<ActivityDetail />} />
         <Route path="/gear" element={<GearPage />} />

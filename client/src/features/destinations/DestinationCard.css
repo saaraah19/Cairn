@@ -1,0 +1,41 @@
+.destination-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.destination-card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.destination-card-cover {
+  height: 110px;
+  background: var(--color-bg);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: var(--space-sm);
+}
+
+.destination-card-body {
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.destination-card-body h3 {
+  font-size: 1.02rem;
+  margin: 0 0 0.2rem;
+}
+
+.destination-card-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-mist);
+}

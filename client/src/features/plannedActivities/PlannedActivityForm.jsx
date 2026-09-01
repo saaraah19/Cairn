@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createPlannedActivityRequest, updatePlannedActivityRequest } from './api.js'
 import { listGroupsRequest, createGroupRequest, listCompanionsRequest, createCompanionRequest } from '../activities/api.js'
+import { listDestinationsRequest } from '../destinations/api.js'
 import '../activities/ActivityForm.css'
 import '../../pages/pages.css'
 import '../auth/authForms.css'
@@ -12,6 +13,7 @@ const emptyForm = {
   plannedDate: '',
   placeName: '',
   wilaya: '',
+  destinationId: '',
   groupName: '',
   companions: '',
   estimatedCostDzd: '',
@@ -27,6 +29,7 @@ function planToForm(plan) {
     plannedDate: plan.plannedDate ? plan.plannedDate.slice(0, 10) : '',
     placeName: plan.location?.placeName ?? '',
     wilaya: plan.location?.wilaya ?? '',
+    destinationId: (typeof plan.destinationId === 'object' ? plan.destinationId?._id : plan.destinationId) ?? '',
     groupName: plan.social?.groupId?.name ?? '',
     companions: (plan.social?.companions ?? []).join(', '),
     estimatedCostDzd: plan.estimatedCostDzd ?? '',
@@ -44,12 +47,14 @@ export function PlannedActivityForm({ plan, planId }) {
   const [form, setForm] = useState(plan ? planToForm(plan) : emptyForm)
   const [groups, setGroups] = useState([])
   const [companionSuggestions, setCompanionSuggestions] = useState([])
+  const [destinations, setDestinations] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     listGroupsRequest().then((d) => setGroups(d.groups)).catch(() => {})
     listCompanionsRequest().then((d) => setCompanionSuggestions(d.companions)).catch(() => {})
+    listDestinationsRequest({ limit: 50 }).then((d) => setDestinations(d.destinations)).catch(() => {})
   }, [])
 
   function set(field) {
@@ -90,6 +95,7 @@ export function PlannedActivityForm({ plan, planId }) {
         type: form.type,
         plannedDate: form.plannedDate,
         location: { placeName: form.placeName.trim(), wilaya: form.wilaya.trim() },
+        destinationId: form.destinationId || null,
         social: { groupId, companions: companionNames },
         estimatedCostDzd: numOrNull(form.estimatedCostDzd),
         expectedDifficulty: form.expectedDifficulty || null,
@@ -141,6 +147,17 @@ export function PlannedActivityForm({ plan, planId }) {
           <div className="form-field">
             <label htmlFor="wilaya">Wilaya</label>
             <input id="wilaya" value={form.wilaya} onChange={set('wilaya')} />
+          </div>
+          <div className="form-field">
+            <label htmlFor="destinationId">Saved destination</label>
+            <select id="destinationId" value={form.destinationId} onChange={set('destinationId')}>
+              <option value="">None</option>
+              {destinations.map((d) => (
+                <option key={d._id} value={d._id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="form-field">
             <label htmlFor="groupName">Group</label>

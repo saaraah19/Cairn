@@ -101,6 +101,14 @@ export function ActivityDetail() {
             {activity.location?.placeName ? ` · ${activity.location.placeName}` : ''}
             {activity.location?.wilaya ? `, ${activity.location.wilaya}` : ''}
           </p>
+          {activity.destinationId?.name && (
+            <p className="activity-detail-meta">
+              Saved destination:{' '}
+              <Link to={`/outdoors/destinations/${activity.destinationId._id}`}>
+                {activity.destinationId.name}
+              </Link>
+            </p>
+          )}
         </div>
         <div className="activity-detail-actions">
           <Link to={`/outdoors/${id}/edit`} className="icon-button">

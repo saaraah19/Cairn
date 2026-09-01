@@ -64,6 +64,7 @@ export function PlannedActivityDetail() {
           date: plan.plannedDate?.slice(0, 10),
           placeName: plan.location?.placeName,
           wilaya: plan.location?.wilaya,
+          destinationId: plan.destinationId?._id ?? '',
           groupName: plan.social?.groupId?.name,
           companions: (plan.social?.companions ?? []).join(', '),
           notes: plan.notes,
@@ -87,6 +88,14 @@ export function PlannedActivityDetail() {
             {TYPE_LABELS[plan.type]} · {formatDate(plan.plannedDate)}
             {plan.location?.placeName ? ` · ${plan.location.placeName}` : ''}
           </p>
+          {plan.destinationId?.name && (
+            <p className="activity-detail-meta">
+              Saved destination:{' '}
+              <Link to={`/outdoors/destinations/${plan.destinationId._id}`}>
+                {plan.destinationId.name}
+              </Link>
+            </p>
+          )}
           <span
             className="planned-status-badge"
             style={{ background: STATUS_COLORS[plan.status] }}

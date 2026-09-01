@@ -1,8 +1,7 @@
 import { Group } from '../models/Group.js'
 import { GearItem } from '../models/GearItem.js'
+import { Destination } from '../models/Destination.js'
 import { ApiError } from './apiResponse.js'
-
-const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i
 
 // Verifies a referenced Group belongs to the authenticated user before it
 // can be attached to an activity or planned activity — never trust a
@@ -25,11 +24,14 @@ export async function assertGearOwnership(userId, gearItemIds) {
   }
 }
 
-// destinationId ownership cannot be verified yet — the Destination model
-// doesn't exist until Phase 7. Format is validated so the field can't be
-// used to store garbage; full ownership check is a TODO for Phase 7.
-export function assertDestinationIdFormat(destinationId) {
-  if (destinationId && !OBJECT_ID_PATTERN.test(destinationId)) {
-    throw new ApiError(422, 'VALIDATION_ERROR', 'Invalid destination reference.')
+// Full ownership check, now that the Destination model exists (Phase 7).
+// Previously this only validated ObjectId *format* — see git history / prior
+// PROGRESS.md entries for Phases 3 and 5, where this was flagged as a
+// deliberate, temporary gap.
+export async function assertDestinationOwnership(userId, destinationId) {
+  if (!destinationId) return
+  const destination = await Destination.findOne({ _id: destinationId, userId })
+  if (!destination) {
+    throw new ApiError(403, 'INVALID_DESTINATION', 'That destination does not belong to you.')
   }
 }

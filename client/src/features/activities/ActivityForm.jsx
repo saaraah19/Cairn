@@ -10,6 +10,7 @@ import {
 } from './api.js'
 import { completePlannedActivityRequest } from '../plannedActivities/api.js'
 import { listGearRequest } from '../gear/api.js'
+import { listDestinationsRequest } from '../destinations/api.js'
 import { CATEGORY_LABELS } from '../gear/formatters.js'
 import './ActivityForm.css'
 import '../../pages/pages.css'
@@ -21,6 +22,7 @@ const emptyForm = {
   date: '',
   placeName: '',
   wilaya: '',
+  destinationId: '',
   groupName: '',
   companions: '',
   distanceKm: '',
@@ -48,6 +50,7 @@ function activityToForm(activity) {
     date: activity.date ? activity.date.slice(0, 10) : '',
     placeName: activity.location?.placeName ?? '',
     wilaya: activity.location?.wilaya ?? '',
+    destinationId: (typeof activity.destinationId === 'object' ? activity.destinationId?._id : activity.destinationId) ?? '',
     groupName: activity.social?.groupId?.name ?? '',
     companions: (activity.social?.companions ?? []).join(', '),
     distanceKm: activity.trail?.distanceKm ?? '',
@@ -80,6 +83,7 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
   const [groups, setGroups] = useState([])
   const [companionSuggestions, setCompanionSuggestions] = useState([])
   const [gearOptions, setGearOptions] = useState([])
+  const [destinations, setDestinations] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
@@ -87,6 +91,7 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
     listGroupsRequest().then((d) => setGroups(d.groups)).catch(() => {})
     listCompanionsRequest().then((d) => setCompanionSuggestions(d.companions)).catch(() => {})
     listGearRequest({ limit: 50 }).then((d) => setGearOptions(d.gear)).catch(() => {})
+    listDestinationsRequest({ limit: 50 }).then((d) => setDestinations(d.destinations)).catch(() => {})
   }, [])
 
   function set(field) {
@@ -139,6 +144,7 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
         type: form.type,
         date: form.date,
         location: { placeName: form.placeName.trim(), wilaya: form.wilaya.trim() },
+        destinationId: form.destinationId || null,
         trail: {
           distanceKm: numOrNull(form.distanceKm),
           durationMinutes: numOrNull(form.durationMinutes),
@@ -216,6 +222,17 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
           <div className="form-field">
             <label htmlFor="wilaya">Wilaya</label>
             <input id="wilaya" value={form.wilaya} onChange={set('wilaya')} />
+          </div>
+          <div className="form-field">
+            <label htmlFor="destinationId">Saved destination</label>
+            <select id="destinationId" value={form.destinationId} onChange={set('destinationId')}>
+              <option value="">None</option>
+              {destinations.map((d) => (
+                <option key={d._id} value={d._id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="form-field">
             <label htmlFor="groupName">Group</label>

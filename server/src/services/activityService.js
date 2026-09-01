@@ -2,12 +2,12 @@ import { Activity } from '../models/Activity.js'
 import { getNextSequenceValue } from '../models/Counter.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { deleteAllPhotosForActivity } from './photoService.js'
-import { assertGroupOwnership, assertGearOwnership, assertDestinationIdFormat } from '../utils/ownershipChecks.js'
+import { assertGroupOwnership, assertGearOwnership, assertDestinationOwnership } from '../utils/ownershipChecks.js'
 
 export async function createActivity(userId, data) {
   await assertGroupOwnership(userId, data.social?.groupId)
   await assertGearOwnership(userId, data.gearItemIds)
-  assertDestinationIdFormat(data.destinationId)
+  await assertDestinationOwnership(data.destinationId)
 
   const activityNumber = await getNextSequenceValue(userId, 'activityNumber')
 
@@ -66,6 +66,7 @@ export async function getOwnedActivity(userId, activityId) {
     .populate('social.groupId', 'name')
     .populate('coverPhotoId', 'secureUrl')
     .populate('gearItemIds', 'name category photo')
+    .populate('destinationId', 'name')
   if (!activity) {
     throw new ApiError(404, 'NOT_FOUND', 'Activity not found.')
   }
@@ -82,7 +83,7 @@ export async function updateActivity(userId, activityId, data) {
     await assertGearOwnership(userId, data.gearItemIds)
   }
   if (data.destinationId !== undefined) {
-    assertDestinationIdFormat(data.destinationId)
+    await assertDestinationOwnership(data.destinationId)
   }
 
   // Deep-merge nested objects rather than overwriting them wholesale, so a

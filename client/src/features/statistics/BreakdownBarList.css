@@ -1,0 +1,35 @@
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 32px;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.85rem;
+  padding: 0.3rem 0;
+}
+
+.breakdown-row-label {
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdown-row-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.breakdown-row-fill {
+  height: 100%;
+  background: var(--color-moss);
+  border-radius: 999px;
+}
+
+.breakdown-row-count {
+  font-family: var(--font-data);
+  font-size: 0.78rem;
+  color: var(--color-mist);
+  text-align: right;
+}

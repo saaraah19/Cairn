@@ -2,20 +2,20 @@
 
 ## Current Status
 
-Overall progress: ~78%
-Current phase: Phase 7 — Destinations
-Current milestone: Phase 7 — Destinations (COMPLETE)
+Overall progress: ~85%
+Current phase: Phase 8 — Statistics
+Current milestone: Phase 8 — Statistics (COMPLETE)
 Status: IMPLEMENTED — pending your live-DB verification and browser review
 Last updated: 2026-09-01
 
 ## Summary
 
-Application code: Phase 0-6 (fully verified by you) + Phase 7 Destinations implemented
-Frontend: Destinations list/form/detail with cover image and a "related activities & plans" view; destination selection now available on both the Activity and Planned Activity forms
-Backend: Destination CRUD with cover-image upload (reusing the Cloudinary pipeline again), plus an important upgrade — `destinationId` ownership is now fully verified on Activities and Planned Activities (previously format-only, a gap flagged since Phase 3)
-Database: Connected (your Atlas cluster) — new Destination collection
-Authentication/Activities/Photos/Gear/Planned Activities/Pack My Bag: Unchanged, all previously verified
-Testing: Manual — validation/auth-guarding verified live; DB-backed happy path needs your run
+Application code: Phase 0-7 (fully verified by you) + Phase 8 Statistics implemented
+Frontend: Statistics page with highlight tiles, personal-record cards linking to the relevant activity, and simple CSS proportional-bar breakdowns (by type/difficulty/year/wilaya) — no charting library added
+Backend: A single read-only `GET /api/statistics` endpoint, entirely derived from Activity records, nothing stored redundantly
+Database: Connected (your Atlas cluster) — no new collection this phase, purely a derived-data endpoint
+Authentication/Activities/Photos/Gear/Planned Activities/Pack My Bag/Destinations: Unchanged, all previously verified
+Testing: Manual — the core calculation logic was verified against hand-computed mock data (not just live-tested), plus validation/auth-guarding verified live
 
 ## Milestone Status
 
@@ -29,94 +29,98 @@ Testing: Manual — validation/auth-guarding verified live; DB-backed happy path
 | Gear (Phase 4) | VERIFIED | |
 | Planned Activities (Phase 5) | VERIFIED | |
 | Pack My Bag (Phase 6) | VERIFIED | |
-| **Destinations (Phase 7)** | **IMPLEMENTED** | CRUD, cover image, related-records view, and destination selection on both activity forms all built. `destinationId` ownership check upgraded from format-only to real verification. Validation/auth verified live. DB-backed happy path and browser review both need you. |
-| Database | IMPLEMENTED | Added `Destination` collection this phase. |
-| Backend | IN PROGRESS | Auth + Activities + Photos + Gear + Planned Activities + Pack My Bag + Destinations + lightweight Groups/Companions done. Statistics not started. |
-| Frontend | IN PROGRESS | Shell + auth + Activities + Gear + Planned Activities + Pack My Bag + Destinations done. |
+| Destinations (Phase 7) | VERIFIED | |
+| **Statistics (Phase 8)** | **IMPLEMENTED** | Totals, personal records, and breakdowns all built. Calculation logic verified against hand-computed mock data with exact-match results. Auth-guarding verified live. DB-backed happy path and browser review both need you. |
+| Database | IMPLEMENTED | No new collection — purely derived from existing `Activity` data. |
+| Backend | IN PROGRESS | Auth + Activities + Photos + Gear + Planned Activities + Pack My Bag + Destinations + Statistics + lightweight Groups/Companions done. Only Profile editing, Data Management, and Polish/Testing/Deployment remain. |
+| Frontend | IN PROGRESS | Shell + auth + Activities + Gear + Planned Activities + Pack My Bag + Destinations + Statistics done. |
 | Planning | DONE | |
 | Gear | DONE | |
 | Backpack (Pack My Bag) | DONE | |
-| Destinations | **DONE** | |
-| Statistics | NOT STARTED | Next and final major product phase before Profile/Data Management/Polish. |
-| Profile | IN PROGRESS | Unchanged (read-only) since Phase 2. |
+| Destinations | DONE | |
+| Statistics | **DONE** | |
+| Profile | IN PROGRESS | Still read-only (unchanged since Phase 2) — Phase 9 is next. |
 | Testing | IN PROGRESS | Manual only. |
-| Mobile/Responsive | IMPLEMENTED (Phase 2 shell) | Destination pages reuse the same responsive components as Gear/Activities; not checked on an actual device yet. |
+| Mobile/Responsive | IMPLEMENTED (Phase 2 shell) | Statistics grids use the same responsive components as everywhere else; not checked on an actual device yet. |
 | Deployment | NOT STARTED | |
 
 ## Completed
 
-- Phases 0-6 (fully verified working by you).
-- **Phase 7 — Destinations:**
+- Phases 0-7 (fully verified working by you).
+- **Phase 8 — Statistics:**
   - **Backend:**
-    - `Destination` model (`server/src/models/Destination.js`) per the data model doc §27-28 — kept genuinely independent of `PlannedActivity`, with its own `status` (`wishlist/planned/visited`, per `02_TECHNICAL_ARCHITECTURE.md` §18), `targetDate`, `description`, `notes`, a single `coverImage` (same Cloudinary metadata pattern as `GearItem.photo`), and a `links` array (plain URL strings).
-    - **Closed a gap flagged since Phase 3**: `assertDestinationIdFormat` (which only checked the string *looked like* a valid ID) is now `assertDestinationOwnership` in the shared `ownershipChecks.js` — a real database check that a referenced destination actually belongs to the authenticated user, exactly mirroring how group/gear ownership already worked. Both `activityService.js` and `plannedActivityService.js` were updated to use it (now `await`ed, since the check is genuinely async). Verified via full regression pass that nothing broke.
-    - `destinationService.js`: CRUD with the standard always-404 ownership pattern, cover-image upload/replace/remove (reusing `uploadBufferToCloudinary`, the same helper shared with gear and activity photos), and `getDestinationRelated` — a derived query (never stored) returning every Activity *and* PlannedActivity that references this destination, mirroring the gear-usage-history pattern from Phase 4.
-    - **Deliberate non-cascade on delete**: unlike gear deletion (which `$pull`s dangling references out of activities), deleting a Destination does *not* clear `destinationId` from activities/plans that reference it. A past activity's record of "I went to X" stays meaningful even if the saved Destination entry is later removed. The docs don't specify either way — flagged as a judgment call, differing intentionally from the gear-deletion precedent.
-    - Routes: `GET/POST /api/destinations`, `GET/PATCH/DELETE /api/destinations/:id`, `GET /api/destinations/:id/related`, `POST/DELETE /api/destinations/:id/cover-image`.
-    - `server/scripts/test-destination-flow.sh` — 10 steps, including explicit tests that cross-user destination attachment is now rejected on *both* Activities and Planned Activities (the actual point of the ownership-check upgrade).
+    - `statisticsService.js` — fetches the user's activities once and reduces totals/records/breakdowns in a single pass, rather than a MongoDB aggregation pipeline. Chose this deliberately: for V1's personal-scale data volume it's simpler to read and maintain, and the architecture doc explicitly favors "easier to understand... sufficient for V1" over premature optimization (§54).
+    - **Totals**: activity count, total distance/duration/elevation gain/elevation loss — summed across all activities, missing fields treated as zero.
+    - **Personal records**: highest peak, longest adventure, hardest adventure (by a simple easy→very_hard rank), highest-rated — each paired with a reference back to the specific activity (`_id`/`activityNumber`/`name`) so the frontend can link directly to it.
+    - **Breakdowns**: by type, by difficulty, by year, by wilaya (top 8, to avoid a sprawling list for users who've logged activities across many locations) — each sorted by count descending.
+    - **Verified independent of the database**: I ran the exact reduction logic against hand-built mock data with known expected outputs (three activities with deliberately distinct values) in this sandbox — every total, record, and breakdown matched exactly. This is a stronger check than the usual "validation paths only" verification I've been able to do for DB-dependent features in prior phases, since the core logic doesn't require a live connection to test in isolation.
+    - `GET /api/statistics` — single endpoint, no create/update (purely derived, matches `05_DATA_MODEL_AND_API_CONTRACT.md` §63's "avoid duplicate sources of truth").
+    - `server/scripts/test-statistics-flow.sh` — creates three activities with known values (including one minimal quick-log entry with almost no fields, to confirm it doesn't break record calculations) and states the exact expected output for you to compare.
   - **Frontend:**
-    - `DestinationList.jsx`/`DestinationCard.jsx` — same list/toolbar/pagination pattern as Activities/Gear/Planned Activities, status badge reusing `PlannedActivityCard.css`'s badge style for visual consistency across the app.
-    - `DestinationForm.jsx` — links entered one-per-line in a textarea, split into an array on submit (same pattern as companions being comma-separated).
-    - `DestinationDetail.jsx` — cover image management (identical UX to gear's single-photo pattern), and a "Related activities & plans" section listing everything that references this destination.
-    - `MyOutdoorsPage`'s "Destinations" tab now renders the real list instead of the Phase 2/3 placeholder — **all three My Outdoors tabs are now fully functional**.
-    - Both `ActivityForm.jsx` and `PlannedActivityForm.jsx` gained a "Saved destination" dropdown (optional, defaults to "None"), and both detail pages now show a link to the linked destination when one is set.
+    - `StatisticsView.jsx` — highlight tiles (reusing `ActivityDetail.css`'s existing `.stat-tile` styling for visual consistency), personal-record cards linking to their source activity, and `BreakdownBarList.jsx` — a small reusable proportional-bar component, deliberately not a charting library, per the UX spec's explicit "avoid unnecessary graphs, prioritize big meaningful numbers" guidance (§29).
+    - Empty state ("Nothing to show yet," with a "Log an activity" call to action) shown when the user has zero activities, rather than a confusing zeroed-out dashboard.
 
 ## In Progress
 
-Nothing actively in progress. Phase 7 is implemented and awaiting your live-DB verification + browser review.
+Nothing actively in progress. Phase 8 is implemented and awaiting your live-DB verification + browser review.
 
 ## Remaining
 
-- **Immediate**: run `server/scripts/test-destination-flow.sh`; try it in the browser — save a destination, attach it to an activity and a plan, open the destination and check "Related activities & plans" shows both
-- **Phase 8 — Statistics** — the last major product-feature phase before Profile/Data Management/Polish/Testing/Deployment round out V1
+- **Immediate**: run `server/scripts/test-statistics-flow.sh` and compare the actual response against the stated expected values; check the page in the browser with a mix of detailed and quick-logged activities
+- **Phase 9 — Profile & Settings** (the profile page has been read-only since Phase 2 — this is where it becomes editable, including the username-change capability from your Phase 1 decision)
+- Phase 10 — Data Management (export, account deletion)
+- Phase 11 — Polish
+- Phase 12 — Testing & Deployment
 
 ## Known Issues
 
-- **DB-backed destination flow not yet verified by you.** Same sandbox limitation as every prior phase. Everything not requiring a live DB write was verified: auth-guarding on every new endpoint, all validation-error paths (missing name, bad status enum on create and list-filter), and a full regression pass confirming the destinationId ownership-check upgrade didn't break Activities or Planned Activities. The actual create→attach-to-activity-and-plan→verify-related→cross-user-rejection→delete-without-cascading flow needs your run. Script provided.
-- Not yet visually reviewed in a browser (same standing caveat since Phase 2).
+- **DB-backed statistics endpoint not yet verified by you against real activity data**, though the underlying calculation logic itself was verified independently in this sandbox (see Completed) with exact-match results against hand-computed expected values — a meaningfully stronger check than usual for a feature I can't fully exercise against your live database.
+- Not yet visually reviewed in a browser (same standing caveat since Phase 2) — worth a look with a realistic mix of your actual logged activities.
+- **"By wilaya" caps at the top 8** — an arbitrary limit to keep the breakdown readable; flagging in case you'd want it uncapped or expressed differently once you have more data.
 - No automated test suite yet.
 
 ## Technical Decisions
 
-- **`destinationId` ownership upgraded from format-check to real verification** — this was explicitly flagged as a temporary, deliberate gap in both the Phase 3 and Phase 5 progress notes ("destinationId ownership cannot be verified yet — the Destination model doesn't exist"). Closing it was the natural first task of this phase.
-- **No cascade-cleanup on destination deletion** — deliberately different from gear deletion's behavior (Phase 4), since a historical activity's connection to a place feels like it should persist even if the saved Destination record is later removed. Flagged as a judgment call, not something the docs specify.
-- **Links stored as plain URL strings**, not `{label, url}` objects — the data model doc just says "links" plural with no further structure specified; kept it simple.
+- **In-memory reduction over MongoDB aggregation pipeline** — simpler code, easier to reason about and modify, and appropriate for a personal app's data scale. Would reconsider if a user's activity count ever became large enough for this to matter, but that's not a V1 concern.
+- **No charting library added** — breakdowns are plain CSS bars, consistent with the "avoid unnecessary dependencies" principle carried through every prior phase, and directly matching the UX spec's stated preference for restraint over decoration.
+- **Outdoor Journey / Playback deferred** — the roadmap explicitly says to defer this if it adds too much complexity for V1 and prioritize core statistics instead; core statistics are what got built.
+- **Statistics scoped to Activities only** (not Planned Activities or Destinations) — matches the roadmap's framing of this phase as "the story of what you did," which is inherently about completed activities.
 
 Open decisions for upcoming phases: none currently.
 
 ## Files / Areas Recently Changed
 
 **Backend — new:**
-`models/Destination.js`, `validators/destinationValidators.js`, `services/destinationService.js`, `controllers/destinationController.js`, `routes/destination.routes.js`, `scripts/test-destination-flow.sh`
+`services/statisticsService.js`, `controllers/statisticsController.js`, `routes/statistics.routes.js`, `scripts/test-statistics-flow.sh`
 
 **Backend — modified:**
-`app.js` (mounted destination routes), `utils/ownershipChecks.js` (`assertDestinationIdFormat` → `assertDestinationOwnership`, now genuinely async), `services/activityService.js` + `services/plannedActivityService.js` (awaited the upgraded check, populate `destinationId` on single-record fetch)
+`app.js` (mounted statistics route)
 
 **Frontend — new:**
-`features/destinations/` — `api.js`, `formatters.js`, `DestinationCard.jsx/css`, `DestinationList.jsx`, `DestinationForm.jsx`, `DestinationDetail.jsx`, `DestinationCreatePage.jsx`, `DestinationEditPage.jsx`
+`features/statistics/api.js`, `features/statistics/BreakdownBarList.jsx/css`, `features/statistics/StatisticsView.jsx/css`
 
 **Frontend — modified:**
-`App.jsx` (destination routes), `pages/MyOutdoorsPage.jsx` (Destinations tab now live), `features/activities/ActivityForm.jsx/Detail.jsx` (destination selection + display), `features/plannedActivities/PlannedActivityForm.jsx/Detail.jsx` (destination selection + display, carried through the "Log this activity" prefill)
+`pages/StatisticsPage.jsx` (renders the real view instead of the Phase 2 placeholder)
 
 ## Verification
 
 Build: `client` — `npm run build` succeeds (verified).
-Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 59 files (verified — clean on the first pass).
-Backend: all files pass `node --check`; app assembles cleanly with destination routes mounted and the upgraded async ownership check wired in correctly (verified).
+Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 62 files (verified — clean on the first pass).
+Backend: all files pass `node --check`; app assembles cleanly (verified).
+**Calculation logic verified independently of the database**: ran the exact totals/records/breakdowns reduction against three hand-built mock activities with deliberately distinct, known values — every computed total, personal record, and breakdown count matched the hand-calculated expected values exactly (verified live, this session).
 Manual verification (live, this session):
-- Full regression pass: health, auth `/me`, activity validation, gear validation, planned-activity validation, destinations auth-guard — all still correct after the ownership-check upgrade (the highest-risk change this phase, since it touched two existing services)
-- Every new destination endpoint correctly returns `401` without authentication
-- Destination validation: missing name, invalid status enum (on both create and list-filter) — all correct `422`s
+- Full regression pass: health, statistics auth-guard, activity/gear/destination/planned-activity validation — all still correct
+- `GET /api/statistics` correctly returns `401` without authentication
 
-Not yet verified (requires your live database): actual destination CRUD, cross-user rejection specifically on the new ownership check (both from Activities and Planned Activities), the related-records query, and non-cascading deletion. Script provided: `server/scripts/test-destination-flow.sh`. Also not yet verified: how any of this looks/feels in a browser.
+Not yet verified (requires your live database): the endpoint's behavior against your actual stored activities, and how the highlight tiles / record cards / breakdown bars actually look in the browser. Script provided: `server/scripts/test-statistics-flow.sh` (states exact expected values to compare against).
 
 ## Next Recommended Step
 
-1. Pull this update, `npm install` in `server/` if needed (no new dependencies this phase)
-2. Run `bash scripts/test-destination-flow.sh` from `server/` against your live database
-3. In the browser: add a destination, use it on both an activity and a plan, open the destination and confirm "Related activities & plans" shows both, add a cover image, then check the My Outdoors "Destinations" tab
-4. Report back — then we start **Phase 8 — Statistics**
+1. Pull this update, `npm install` if needed (no new dependencies this phase)
+2. Run `bash scripts/test-statistics-flow.sh` and compare the output against the script's stated expected values
+3. In the browser: open Statistics with your real logged activities and sanity-check the numbers, personal records, and breakdown bars
+4. Report back — then we start **Phase 9 — Profile & Settings**
 
 ## Last Handover
 
-No prior handover — continuing directly within the same conversation from Phase 6.
+No prior handover — continuing directly within the same conversation from Phase 7.

@@ -3,7 +3,7 @@ import './BreakdownBarList.css'
 // A simple proportional-bar breakdown — deliberately not a charting library.
 // docs/03_UX_DESIGN_SPEC.md §29: "avoid presenting the page as a spreadsheet
 // full of numbers... avoid unnecessary graphs."
-export function BreakdownBarList({ items, labelKey, formatLabel }) {
+export function BreakdownBarList({ items, labelKey, formatLabel, getColor }) {
   if (!items || items.length === 0) return null
   const max = Math.max(...items.map((i) => i.count))
 
@@ -17,7 +17,10 @@ export function BreakdownBarList({ items, labelKey, formatLabel }) {
           <span className="breakdown-row-track">
             <span
               className="breakdown-row-fill"
-              style={{ width: `${(item.count / max) * 100}%` }}
+              style={{
+                width: `${(item.count / max) * 100}%`,
+                background: getColor ? getColor(item[labelKey]) : undefined,
+              }}
             />
           </span>
           <span className="breakdown-row-count">{item.count}</span>

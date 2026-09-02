@@ -2,20 +2,20 @@
 
 ## Current Status
 
-Overall progress: ~85%
-Current phase: Phase 8 — Statistics
-Current milestone: Phase 8 — Statistics (COMPLETE)
+Overall progress: ~92%
+Current phase: Phase 9 — Profile & Settings
+Current milestone: Phase 9 — Profile & Settings (COMPLETE)
 Status: IMPLEMENTED — pending your live-DB verification and browser review
-Last updated: 2026-09-01
+Last updated: 2026-09-02
 
 ## Summary
 
-Application code: Phase 0-7 (fully verified by you) + Phase 8 Statistics implemented
-Frontend: Statistics page with highlight tiles, personal-record cards linking to the relevant activity, and simple CSS proportional-bar breakdowns (by type/difficulty/year/wilaya) — no charting library added
-Backend: A single read-only `GET /api/statistics` endpoint, entirely derived from Activity records, nothing stored redundantly
-Database: Connected (your Atlas cluster) — no new collection this phase, purely a derived-data endpoint
-Authentication/Activities/Photos/Gear/Planned Activities/Pack My Bag/Destinations: Unchanged, all previously verified
-Testing: Manual — the core calculation logic was verified against hand-computed mock data (not just live-tested), plus validation/auth-guarding verified live
+Application code: Phase 0-8 (fully verified by you) + Phase 9 Profile & Settings implemented
+Frontend: Profile is now fully editable (picture, name, username, bio, location), password change/set, working light/dark/system theme with no flash-of-wrong-theme on load, privacy preference (default activity visibility)
+Backend: Profile update with username-uniqueness re-check, password change/set (handles both password and Google-only accounts), profile picture upload (Cloudinary, same pattern as gear/destinations)
+Database: Connected (your Atlas cluster) — no new collection; `User.profilePicture` upgraded from a plain string to the established `{cloudinaryPublicId, secureUrl}` pattern
+Authentication/Activities/Photos/Gear/Planned Activities/Pack My Bag/Destinations/Statistics: Unchanged, all previously verified
+Testing: Manual — validation/auth-guarding verified live, full regression pass covering all prior phases; DB-backed happy path needs your run
 
 ## Milestone Status
 
@@ -30,97 +30,100 @@ Testing: Manual — the core calculation logic was verified against hand-compute
 | Planned Activities (Phase 5) | VERIFIED | |
 | Pack My Bag (Phase 6) | VERIFIED | |
 | Destinations (Phase 7) | VERIFIED | |
-| **Statistics (Phase 8)** | **IMPLEMENTED** | Totals, personal records, and breakdowns all built. Calculation logic verified against hand-computed mock data with exact-match results. Auth-guarding verified live. DB-backed happy path and browser review both need you. |
-| Database | IMPLEMENTED | No new collection — purely derived from existing `Activity` data. |
-| Backend | IN PROGRESS | Auth + Activities + Photos + Gear + Planned Activities + Pack My Bag + Destinations + Statistics + lightweight Groups/Companions done. Only Profile editing, Data Management, and Polish/Testing/Deployment remain. |
-| Frontend | IN PROGRESS | Shell + auth + Activities + Gear + Planned Activities + Pack My Bag + Destinations + Statistics done. |
-| Planning | DONE | |
-| Gear | DONE | |
-| Backpack (Pack My Bag) | DONE | |
-| Destinations | DONE | |
-| Statistics | **DONE** | |
-| Profile | IN PROGRESS | Still read-only (unchanged since Phase 2) — Phase 9 is next. |
+| Statistics (Phase 8) | VERIFIED | Plus a follow-up color/icon polish pass per your feedback. |
+| **Profile & Settings (Phase 9)** | **IMPLEMENTED** | Profile editing, password change/set, picture upload, working dark mode, privacy preference all built. Validation/auth verified live, full regression pass across every prior phase. DB-backed happy path and browser review both need you. |
+| Database | IMPLEMENTED | No new collection — `User.profilePicture` schema upgraded. |
+| Backend | IN PROGRESS | Every core V1 feature from the roadmap now has a backend. Only Data Management (export/account deletion, Phase 10) remains before Polish/Testing/Deployment. |
+| Frontend | IN PROGRESS | Every core V1 feature now has a working UI, including a real editable profile. |
+| Profile | **DONE** | |
 | Testing | IN PROGRESS | Manual only. |
-| Mobile/Responsive | IMPLEMENTED (Phase 2 shell) | Statistics grids use the same responsive components as everywhere else; not checked on an actual device yet. |
+| Mobile/Responsive | IMPLEMENTED (Phase 2 shell) | Settings sections reuse the same responsive form components as everywhere else; not checked on an actual device yet. |
 | Deployment | NOT STARTED | |
 
 ## Completed
 
-- Phases 0-7 (fully verified working by you).
-- **Phase 8 — Statistics:**
+- Phases 0-8 (fully verified working by you, including the statistics color/icon polish follow-up).
+- **Phase 9 — Profile & Settings:**
   - **Backend:**
-    - `statisticsService.js` — fetches the user's activities once and reduces totals/records/breakdowns in a single pass, rather than a MongoDB aggregation pipeline. Chose this deliberately: for V1's personal-scale data volume it's simpler to read and maintain, and the architecture doc explicitly favors "easier to understand... sufficient for V1" over premature optimization (§54).
-    - **Totals**: activity count, total distance/duration/elevation gain/elevation loss — summed across all activities, missing fields treated as zero.
-    - **Personal records**: highest peak, longest adventure, hardest adventure (by a simple easy→very_hard rank), highest-rated — each paired with a reference back to the specific activity (`_id`/`activityNumber`/`name`) so the frontend can link directly to it.
-    - **Breakdowns**: by type, by difficulty, by year, by wilaya (top 8, to avoid a sprawling list for users who've logged activities across many locations) — each sorted by count descending.
-    - **Verified independent of the database**: I ran the exact reduction logic against hand-built mock data with known expected outputs (three activities with deliberately distinct values) in this sandbox — every total, record, and breakdown matched exactly. This is a stronger check than the usual "validation paths only" verification I've been able to do for DB-dependent features in prior phases, since the core logic doesn't require a live connection to test in isolation.
-    - `GET /api/statistics` — single endpoint, no create/update (purely derived, matches `05_DATA_MODEL_AND_API_CONTRACT.md` §63's "avoid duplicate sources of truth").
-    - `server/scripts/test-statistics-flow.sh` — creates three activities with known values (including one minimal quick-log entry with almost no fields, to confirm it doesn't break record calculations) and states the exact expected output for you to compare.
-  - **Frontend:**
-    - `StatisticsView.jsx` — highlight tiles (reusing `ActivityDetail.css`'s existing `.stat-tile` styling for visual consistency), personal-record cards linking to their source activity, and `BreakdownBarList.jsx` — a small reusable proportional-bar component, deliberately not a charting library, per the UX spec's explicit "avoid unnecessary graphs, prioritize big meaningful numbers" guidance (§29).
-    - Empty state ("Nothing to show yet," with a "Log an activity" call to action) shown when the user has zero activities, rather than a confusing zeroed-out dashboard.
+    - `User.profilePicture` upgraded from a bare string to the `{cloudinaryPublicId, secureUrl}` pattern already established for gear/destination images — it was never actually used before this phase, so this was a safe, clean upgrade rather than a breaking migration. Updated the Google-auth service accordingly (Google's own hosted picture URL is stored with `cloudinaryPublicId: null`, since there's nothing of ours to manage/delete in Cloudinary for it).
+    - `profileService.js`: `updateProfile` re-checks username uniqueness only when the username is actually changing (avoids a false "taken" error against the user's own current value), and merges `preferences` updates rather than replacing the whole object — so updating just `defaultActivityVisibility` doesn't wipe out `theme`, verified in the test script.
+    - **`changePassword` handles two distinct cases**: accounts with an existing password must confirm it (standard security practice); Google-only accounts (no `passwordHash` yet) can set one for the first time with nothing to confirm — mirrors the `NO_PASSWORD_SET` distinction already established in Phase 1b's login flow. Successfully setting a password also adds `'password'` to `authProviders`.
+    - **Username change releases immediately** — your explicit decision. No extra logic needed: the existing unique index just allows the freed value to be claimed the moment the document itself no longer holds it. Verified in the test script by having a second account immediately claim the first account's old username.
+    - Profile picture upload/remove reuses the exact same Cloudinary pipeline as gear and destination images.
+    - Routes: `GET/PATCH /api/profile`, `PATCH /api/profile/password`, `POST/DELETE /api/profile/picture`.
+    - `server/scripts/test-profile-flow.sh` — 8 steps covering profile update, username change + immediate reuse by a second account, password-change-without-current-password rejection, password-change-with-current-password success, logging in with the new password, and confirming partial preference updates don't clobber sibling preferences.
+  - **Frontend — working dark mode**, not just a stored-but-inert preference:
+    - Two new derived color tokens were already added during the Statistics polish pass (`--color-moss-light`, `--color-clay-light`); this phase added a full dark palette in `tokens.css` under `html[data-theme='dark']` — same hue families as light mode (moss green, clay warm accent), lightened and slightly desaturated for legibility rather than a flat inversion.
+    - **Found and fixed several hardcoded hex colors** scattered across `authForms.css`, `ActivityForm.css`, `ActivitiesList.css`, `PhotoGallery.css`, and `PackMyBag.css` (input borders, selected-checkbox tints) that would have looked wrong in dark mode since they bypassed the token system entirely. Replaced all of them with two new tokens (`--color-border-input`, `--color-selected-bg`) that have dark-mode overrides — a genuine bug caught and fixed as a side effect of building this feature properly, not just cosmetic.
+    - `ThemeProvider.jsx` (`features/theme/`): manages the light/dark/system preference, resolves "system" via `matchMedia` and stays live-updated if the OS preference changes mid-session, and caches the choice in `localStorage` purely so the correct theme paints immediately on load.
+    - **No flash-of-wrong-theme**: a small inline script in `index.html` applies the cached preference before React even mounts — a standard, minimal technique for this exact problem, not overengineering.
+    - `App.jsx` syncs the theme to the authenticated user's saved `preferences.theme` once per login session (covers the case where it differs from what's locally cached, e.g. changed on another device), without fighting later in-session changes made via Settings.
+    - `ProfileSettingsPage.jsx` (`features/profile/`, replacing the read-only Phase 2 `pages/ProfilePage.jsx`, which was removed): Picture, Profile (name/username/bio/location), Account (email display, connected providers, change/set password), Appearance (theme radio), Privacy (default visibility radio), and a Data section stating export/deletion are coming in a future update — deliberately not building Phase 10's functionality early.
+    - `AuthContext.jsx` gained an `updateUser` function so profile edits immediately reflect everywhere the authenticated user's data is used (e.g. the Home page's welcome message), without each feature needing its own notion of "the current user."
 
 ## In Progress
 
-Nothing actively in progress. Phase 8 is implemented and awaiting your live-DB verification + browser review.
+Nothing actively in progress. Phase 9 is implemented and awaiting your live-DB verification + browser review.
 
 ## Remaining
 
-- **Immediate**: run `server/scripts/test-statistics-flow.sh` and compare the actual response against the stated expected values; check the page in the browser with a mix of detailed and quick-logged activities
-- **Phase 9 — Profile & Settings** (the profile page has been read-only since Phase 2 — this is where it becomes editable, including the username-change capability from your Phase 1 decision)
-- Phase 10 — Data Management (export, account deletion)
+- **Immediate**: run `server/scripts/test-profile-flow.sh`; try it in the browser — edit your profile, upload a picture, change your password, toggle through light/dark/system and confirm dark mode actually looks right (not just "colors changed" — check contrast/legibility across a few different pages)
+- **Phase 10 — Data Management** (export, account deletion) — the last feature phase before Polish/Testing/Deployment
 - Phase 11 — Polish
 - Phase 12 — Testing & Deployment
 
 ## Known Issues
 
-- **DB-backed statistics endpoint not yet verified by you against real activity data**, though the underlying calculation logic itself was verified independently in this sandbox (see Completed) with exact-match results against hand-computed expected values — a meaningfully stronger check than usual for a feature I can't fully exercise against your live database.
-- Not yet visually reviewed in a browser (same standing caveat since Phase 2) — worth a look with a realistic mix of your actual logged activities.
-- **"By wilaya" caps at the top 8** — an arbitrary limit to keep the breakdown readable; flagging in case you'd want it uncapped or expressed differently once you have more data.
+- **DB-backed profile flow not yet verified by you.** Same sandbox limitation as every prior phase. Everything not requiring a live DB write was verified: auth-guarding on every new endpoint, all validation-error paths (bad username format, password too short), and a full regression pass confirming the `profilePicture` schema change didn't break registration or any other endpoint. The actual update→username-change→password-change→login-with-new-password flow needs your run. Script provided.
+- **Dark mode has not been visually reviewed by me at all** — this sandbox genuinely cannot render anything, so unlike most "not yet visually reviewed" notes in prior phases (which were about polish/spacing), this one is about whether the dark palette is actually *legible and pleasant*, not just "technically present." Please look at it closely across a few different pages before considering this done.
 - No automated test suite yet.
 
 ## Technical Decisions
 
-- **In-memory reduction over MongoDB aggregation pipeline** — simpler code, easier to reason about and modify, and appropriate for a personal app's data scale. Would reconsider if a user's activity count ever became large enough for this to matter, but that's not a V1 concern.
-- **No charting library added** — breakdowns are plain CSS bars, consistent with the "avoid unnecessary dependencies" principle carried through every prior phase, and directly matching the UX spec's stated preference for restraint over decoration.
-- **Outdoor Journey / Playback deferred** — the roadmap explicitly says to defer this if it adds too much complexity for V1 and prioritize core statistics instead; core statistics are what got built.
-- **Statistics scoped to Activities only** (not Planned Activities or Destinations) — matches the roadmap's framing of this phase as "the story of what you did," which is inherently about completed activities.
+- **Username release is immediate** — your explicit decision, simplest approach, no extra tracking needed.
+- **Password change requires current password; first-time password set (Google-only accounts) does not** — since there's nothing to confirm yet. Mirrors the existing `NO_PASSWORD_SET` pattern from Phase 1b.
+- **`profilePicture` schema upgrade treated as safe** since the field was never actually populated with real data before this phase (Google's picture URL was the only prior writer, and that's been updated to match).
+- **Dark mode implemented as a real, working feature** rather than just storing an inert preference — the roadmap explicitly lists "Light mode / Dark mode / System preference" under Phase 9's settings, so this felt like the actual scope rather than optional extra work.
+- **Data Management UI deliberately stubbed**, not built — Phase 10's job, kept out of scope here on purpose.
 
 Open decisions for upcoming phases: none currently.
 
 ## Files / Areas Recently Changed
 
 **Backend — new:**
-`services/statisticsService.js`, `controllers/statisticsController.js`, `routes/statistics.routes.js`, `scripts/test-statistics-flow.sh`
+`validators/profileValidators.js`, `services/profileService.js`, `controllers/profileController.js`, `routes/profile.routes.js`, `scripts/test-profile-flow.sh`
 
 **Backend — modified:**
-`app.js` (mounted statistics route)
+`app.js` (mounted profile routes), `models/User.js` (`profilePicture` schema upgrade), `services/authService.js` (Google profile picture handling updated to match)
 
 **Frontend — new:**
-`features/statistics/api.js`, `features/statistics/BreakdownBarList.jsx/css`, `features/statistics/StatisticsView.jsx/css`
+`features/theme/` — `themeContextObject.js`, `useTheme.js`, `ThemeProvider.jsx`; `features/profile/` — `api.js`, `ProfileSettingsPage.jsx/css`
 
 **Frontend — modified:**
-`pages/StatisticsPage.jsx` (renders the real view instead of the Phase 2 placeholder)
+`styles/tokens.css` (dark palette, new border/selected-bg tokens), `index.html` (flash-avoidance inline script), `App.jsx` (ThemeProvider wiring, theme sync on login, profile route), `features/auth/AuthContext.jsx` (`updateUser`), five CSS files with hardcoded colors replaced by theme-aware tokens (see Completed)
+
+**Frontend — removed:**
+`pages/ProfilePage.jsx`, `pages/ProfilePage.css` (superseded by `features/profile/ProfileSettingsPage.jsx`)
 
 ## Verification
 
-Build: `client` — `npm run build` succeeds (verified).
-Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 62 files (verified — clean on the first pass).
-Backend: all files pass `node --check`; app assembles cleanly (verified).
-**Calculation logic verified independently of the database**: ran the exact totals/records/breakdowns reduction against three hand-built mock activities with deliberately distinct, known values — every computed total, personal record, and breakdown count matched the hand-calculated expected values exactly (verified live, this session).
+Build: `client` — `npm run build` succeeds (verified). Confirmed the dark-theme CSS selector and all overrides survived minification in the actual build output (verified by inspecting `dist/assets/*.css` directly).
+Lint: `client` — `npx oxlint` → 0 warnings, 0 errors across 67 files (verified).
+Backend: all files pass `node --check`; app assembles cleanly with the `profilePicture` schema change and new profile routes (verified).
 Manual verification (live, this session):
-- Full regression pass: health, statistics auth-guard, activity/gear/destination/planned-activity validation — all still correct
-- `GET /api/statistics` correctly returns `401` without authentication
+- Full regression pass: health, registration (specifically re-checking the `profilePicture` schema upgrade didn't break it), statistics auth-guard, destination validation, profile auth-guard — all correct
+- Profile validation: bad username format, password too short — correct `422`s
+- Every new profile endpoint correctly returns `401` without authentication
 
-Not yet verified (requires your live database): the endpoint's behavior against your actual stored activities, and how the highlight tiles / record cards / breakdown bars actually look in the browser. Script provided: `server/scripts/test-statistics-flow.sh` (states exact expected values to compare against).
+Not yet verified (requires your live database): the actual profile-update/username-change/password-change flow, and — genuinely important this phase — how dark mode actually looks in a browser, since this sandbox cannot render anything visual at all. Script provided: `server/scripts/test-profile-flow.sh`.
 
 ## Next Recommended Step
 
 1. Pull this update, `npm install` if needed (no new dependencies this phase)
-2. Run `bash scripts/test-statistics-flow.sh` and compare the output against the script's stated expected values
-3. In the browser: open Statistics with your real logged activities and sanity-check the numbers, personal records, and breakdown bars
-4. Report back — then we start **Phase 9 — Profile & Settings**
+2. Run `bash scripts/test-profile-flow.sh` against your live database
+3. In the browser: edit your profile, upload a picture, change your password and confirm you can log in with the new one, and **specifically check dark mode carefully** — toggle through all three options, look at several different pages (not just Settings), and tell me if anything reads poorly
+4. Report back — then we start **Phase 10 — Data Management**
 
 ## Last Handover
 
-No prior handover — continuing directly within the same conversation from Phase 7.
+No prior handover — continuing directly within the same conversation from Phase 8.

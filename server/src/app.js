@@ -12,6 +12,7 @@ import gearRoutes from './routes/gear.routes.js'
 import plannedActivityRoutes from './routes/plannedActivity.routes.js'
 import destinationRoutes from './routes/destination.routes.js'
 import statisticsRoutes from './routes/statistics.routes.js'
+import profileRoutes from './routes/profile.routes.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -32,6 +33,7 @@ export function createApp() {
   app.use('/api/planned-activities', plannedActivityRoutes)
   app.use('/api/destinations', destinationRoutes)
   app.use('/api/statistics', statisticsRoutes)
+  app.use('/api/profile', profileRoutes)
 
   app.use(notFound)
   app.use(errorHandler)

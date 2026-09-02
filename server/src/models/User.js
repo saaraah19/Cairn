@@ -39,9 +39,11 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    // Same single-image Cloudinary metadata pattern as GearItem.photo /
+    // Destination.coverImage — metadata only, binary lives in Cloudinary.
     profilePicture: {
-      type: String,
-      default: null,
+      cloudinaryPublicId: { type: String, default: null },
+      secureUrl: { type: String, default: null },
     },
     bio: {
       type: String,

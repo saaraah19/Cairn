@@ -69,8 +69,11 @@ export async function authenticateOrCreateGoogleUser({ googleId, email, name, pi
     if (!existingByEmail.authProviders.includes('google')) {
       existingByEmail.authProviders.push('google')
     }
-    if (!existingByEmail.profilePicture && picture) {
-      existingByEmail.profilePicture = picture
+    if (!existingByEmail.profilePicture?.secureUrl && picture) {
+      // No cloudinaryPublicId — this is Google's own hosted image URL, not
+      // something we uploaded ourselves, so there's nothing for us to
+      // manage/delete in Cloudinary later.
+      existingByEmail.profilePicture = { cloudinaryPublicId: null, secureUrl: picture }
     }
     await existingByEmail.save()
     return existingByEmail
@@ -83,7 +86,7 @@ export async function authenticateOrCreateGoogleUser({ googleId, email, name, pi
     email,
     username,
     googleId,
-    profilePicture: picture ?? null,
+    profilePicture: picture ? { cloudinaryPublicId: null, secureUrl: picture } : undefined,
     authProviders: ['google'],
   })
 

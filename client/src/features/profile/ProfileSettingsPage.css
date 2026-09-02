@@ -1,0 +1,83 @@
+.profile-picture-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.profile-picture-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-mist);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  border: var(--border-hairline);
+}
+
+.profile-picture-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.profile-picture-actions label {
+  cursor: pointer;
+}
+
+.profile-picture-actions input[type='file'] {
+  display: none;
+}
+
+.settings-providers {
+  display: flex;
+  gap: var(--space-xs);
+  margin: var(--space-xs) 0 var(--space-md);
+}
+
+.settings-save-note {
+  font-size: 0.8rem;
+  color: var(--color-moss-deep);
+}
+
+.radio-row {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.radio-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.logout-button {
+  margin-top: var(--space-lg);
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.provider-pill {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-moss-deep);
+  border: var(--border-hairline);
+  text-transform: capitalize;
+}

@@ -10,7 +10,9 @@
   --color-ink: #262b22;
   --color-moss: #3f5b45;
   --color-moss-deep: #2b4030;
+  --color-moss-light: #7fa08a;
   --color-clay: #a9683f;
+  --color-clay-light: #c99a6b;
   --color-mist: #7a8177;
   --color-danger: #a13f3f;
   --color-danger-bg: #f5e8e8;
@@ -33,6 +35,8 @@
   --radius-md: 12px;
   --radius-lg: 18px;
   --border-hairline: 1px solid #dcdad2;
+  --color-border-input: #cfd8d1;
+  --color-selected-bg: #eef3ef;
 
   /* Elevation — flat by default, one soft shadow for elevated surfaces */
   --shadow-soft: 0 4px 20px rgba(38, 43, 34, 0.06);
@@ -40,6 +44,27 @@
   /* Layout */
   --sidebar-width: 224px;
   --bottom-bar-height: 64px;
+}
+
+/* Dark theme — same hue families (moss/clay), lightened and slightly
+   desaturated for legibility on a dark background, not a pure inversion. */
+html[data-theme='dark'] {
+  --color-bg: #1c211a;
+  --color-surface: #242b21;
+  --color-ink: #e8e6de;
+  --color-moss: #7fa08a;
+  --color-moss-deep: #a8c4b3;
+  --color-moss-light: #a8c4b3;
+  --color-clay: #c98a5c;
+  --color-clay-light: #e0b48c;
+  --color-mist: #9aa196;
+  --color-danger: #d97a7a;
+  --color-danger-bg: #3a2426;
+  --color-danger-border: #5c3a3d;
+  --border-hairline: 1px solid #3a4136;
+  --color-border-input: #4a5142;
+  --color-selected-bg: #2f3a2c;
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 * {

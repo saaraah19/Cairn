@@ -50,7 +50,14 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
-  const value = { user, isLoading, register, login, loginWithGoogle, logout }
+  // Lets other features (profile settings, picture upload, etc.) sync the
+  // app-wide user state after an update, without each one needing its own
+  // notion of "the current user."
+  const updateUser = useCallback((updatedUser) => {
+    setUser(updatedUser)
+  }, [])
+
+  const value = { user, isLoading, register, login, loginWithGoogle, logout, updateUser }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

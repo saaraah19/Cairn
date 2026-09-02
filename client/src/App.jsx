@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './features/auth/AuthContext.jsx'
 import { useAuth } from './features/auth/useAuth.js'
+import { ThemeProvider } from './features/theme/ThemeProvider.jsx'
+import { useTheme } from './features/theme/useTheme.js'
 import { RegisterForm } from './features/auth/RegisterForm.jsx'
 import { LoginForm } from './features/auth/LoginForm.jsx'
 import { AuthLayout } from './layouts/AuthLayout.jsx'
@@ -11,7 +13,7 @@ import { HomePage } from './pages/HomePage.jsx'
 import { MyOutdoorsPage } from './pages/MyOutdoorsPage.jsx'
 import { GearPage } from './pages/GearPage.jsx'
 import { StatisticsPage } from './pages/StatisticsPage.jsx'
-import { ProfilePage } from './pages/ProfilePage.jsx'
+import { ProfileSettingsPage } from './features/profile/ProfileSettingsPage.jsx'
 import { ActivityCreatePage } from './features/activities/ActivityCreatePage.jsx'
 import { ActivityEditPage } from './features/activities/ActivityEditPage.jsx'
 import { ActivityDetail } from './features/activities/ActivityDetail.jsx'
@@ -75,6 +77,19 @@ function AuthGate() {
 
 function AppContent() {
   const { user, isLoading } = useAuth()
+  const { setPreference } = useTheme()
+  const syncedUserIdRef = useRef(null)
+
+  // Once the authenticated user's saved theme preference is available,
+  // apply it (covers the case where it differs from what's cached locally,
+  // e.g. changed on another device). Only once per login session, so a
+  // change made via Settings later isn't immediately overwritten by this.
+  useEffect(() => {
+    if (user && syncedUserIdRef.current !== user._id) {
+      setPreference(user.preferences?.theme ?? 'system')
+      syncedUserIdRef.current = user._id
+    }
+  }, [user, setPreference])
 
   if (isLoading) {
     return (
@@ -108,7 +123,7 @@ function AppContent() {
         <Route path="/gear/:id/edit" element={<GearEditPage />} />
         <Route path="/gear/:id" element={<GearDetail />} />
         <Route path="/statistics" element={<StatisticsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProfileSettingsPage />} />
       </Route>
     </Routes>
   )
@@ -116,11 +131,13 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

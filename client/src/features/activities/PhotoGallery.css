@@ -70,7 +70,7 @@
   justify-content: center;
   aspect-ratio: 1;
   min-height: 110px;
-  border: 2px dashed #cfd8d1;
+  border: 2px dashed var(--color-border-input);
   border-radius: var(--radius-md);
   color: var(--color-mist);
   font-size: 0.8rem;

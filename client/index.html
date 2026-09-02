@@ -11,6 +11,20 @@
       rel="stylesheet"
     />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+      // Applies the cached theme preference before React mounts, avoiding a
+      // flash of the wrong theme. Mirrors the logic in ThemeProvider.jsx.
+      (function () {
+        var pref = localStorage.getItem('cairn-theme-preference') || 'system'
+        var effective =
+          pref === 'system'
+            ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light')
+            : pref
+        document.documentElement.setAttribute('data-theme', effective)
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

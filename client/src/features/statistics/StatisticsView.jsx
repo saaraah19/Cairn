@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getStatisticsRequest } from './api.js'
 import { BreakdownBarList } from './BreakdownBarList.jsx'
-import { CountIcon, DistanceIcon, DurationIcon, ElevationIcon } from './StatsIcons.jsx'
+import { CountIcon, DistanceIcon, DurationIcon, ElevationIcon, WalletIcon } from './StatsIcons.jsx'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import { formatDistance, formatDuration, TYPE_LABELS, DIFFICULTY_LABELS } from '../activities/formatters.js'
+import { formatPrice } from '../gear/formatters.js'
 import './StatisticsView.css'
 
 // Difficulty bars go from calm green to warm clay/red as difficulty rises —
@@ -68,7 +69,13 @@ export function StatisticsView() {
     { label: 'Distance', value: formatDistance(totals.distanceKm) ?? '0 km', icon: DistanceIcon, color: 'var(--color-clay)' },
     { label: 'Duration', value: formatDuration(totals.durationMinutes) ?? '0m', icon: DurationIcon, color: 'var(--color-moss-light)' },
     { label: 'Elevation gain', value: `+${totals.elevationGainM} m`, icon: ElevationIcon, color: 'var(--color-clay-light)' },
-  ]
+    totals.gearValueDzd > 0 && {
+      label: 'Gear Value',
+      value: formatPrice(totals.gearValueDzd),
+      icon: WalletIcon,
+      color: 'var(--color-moss-deep)',
+    },
+  ].filter(Boolean)
 
   const recordCards = [
     records.highestAltitudeM != null && {

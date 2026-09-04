@@ -1,18 +1,21 @@
 import { Activity } from '../models/Activity.js'
+import { GearItem } from '../models/GearItem.js'
 
 const DIFFICULTY_RANK = { easy: 1, moderate: 2, hard: 3, very_hard: 4 }
 
-// Personal statistics are entirely derived from Activity records, never
-// stored, per docs/05_DATA_MODEL_AND_API_CONTRACT.md §37-38 and §63 ("Do
-// not duplicate sources of truth"). For V1's personal-scale data volume,
-// fetching everything and reducing in JS is simpler and easier to maintain
-// than a MongoDB aggregation pipeline, and fast enough — see
+// Personal statistics are entirely derived from Activity (and, for gear
+// spend, GearItem) records, never stored, per
+// docs/05_DATA_MODEL_AND_API_CONTRACT.md §37-38 and §63 ("Do not duplicate
+// sources of truth"). For V1's personal-scale data volume, fetching
+// everything and reducing in JS is simpler and easier to maintain than a
+// MongoDB aggregation pipeline, and fast enough — see
 // docs/02_TECHNICAL_ARCHITECTURE.md §54 ("prefer the solution that is
 // easier to understand... sufficient for V1").
 export async function getStatistics(userId) {
-  const activities = await Activity.find({ userId }).select(
-    'activityNumber name date type trail review location.wilaya'
-  )
+  const [activities, gearItems] = await Promise.all([
+    Activity.find({ userId }).select('activityNumber name date type trail review location.wilaya'),
+    GearItem.find({ userId }).select('purchasePriceDzd'),
+  ])
 
   const totals = {
     activities: activities.length,
@@ -20,6 +23,7 @@ export async function getStatistics(userId) {
     durationMinutes: 0,
     elevationGainM: 0,
     elevationLossM: 0,
+    gearValueDzd: gearItems.reduce((sum, g) => sum + (g.purchasePriceDzd ?? 0), 0),
   }
 
   const records = {

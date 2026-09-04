@@ -43,3 +43,13 @@ export function ElevationIcon(props) {
     </svg>
   )
 }
+
+export function WalletIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" {...common} {...props}>
+      <path d="M4 7a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v2" />
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M15 13.5h3" />
+    </svg>
+  )
+}

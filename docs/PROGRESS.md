@@ -51,6 +51,7 @@ Testing: Manual — validation/auth-guarding verified live, full regression pass
   - **Copy fix**: `ActivityForm.jsx`'s empty-gear-closet message said "add some from the Gear tab" — imprecise, since Gear is a top-level navigation destination, not a tab (tabs only exist within My Outdoors). Corrected.
   - **Systematically verified, no issues found**: no stale "Coming in Phase X" placeholder text anywhere (the two that existed — Home's and Gear's "coming soon" CTAs — were already corrected in their respective launch phases), no leftover `TODO`/`FIXME` markers, no stray `console.log`/`console.debug` calls in either the frontend or backend beyond the four expected/intentional backend locations (env warnings, DB connection, server startup, centralized error handler), both `.env.example` files already fully up to date with every variable added across all ten phases, all responsive grids use `auto-fit`/`auto-fill` with `minmax()` except one deliberately-fixed 3-column simple row layout (statistics breakdown bars) that's fine at any realistic viewport width.
   - **What I explicitly could not do**: this sandbox has never had a way to render the app — every "visual QA" claim in this phase is a code-level check (are the right ARIA attributes present, are the right CSS classes shared, is the grid pattern responsive-capable), not a look at how it actually renders. The roadmap's own list for this phase (typography, spacing, color, cards, images, icons, and hands-on testing across phone-portrait/phone-landscape/tablet/desktop) is fundamentally a visual/device exercise that needs your eyes, not mine.
+  - **Small feature addition, your request**: Statistics now shows total gear value spent — derived from summing `GearItem.purchasePriceDzd` across all your gear (never stored, computed fresh each request, same "derive don't duplicate" principle as every other statistic). Shown as a fifth highlight tile with its own icon and color, but **only when the total is actually greater than zero** — if you haven't recorded purchase prices on your gear, the tile doesn't appear rather than showing a hollow "0 DZD." One thing worth knowing: this tile currently only shows up when you also have at least one activity logged, since the Statistics page's empty-state check is still scoped to activity count (a Phase 8 decision). If you have gear with prices but zero activities yet, you'd see the "nothing to show yet" empty state instead of just the gear-value tile — flagging this as a possible follow-up if you'd rather it show independently.
 
 ## In Progress
 
@@ -78,7 +79,10 @@ Open decisions: none — Phase 10 was the last phase with open product decisions
 ## Files / Areas Recently Changed
 
 **Frontend — modified:**
-`features/activities/ActivitiesList.jsx`, `features/gear/GearList.jsx`, `features/destinations/DestinationList.jsx`, `features/plannedActivities/PlannedActivitiesList.jsx`, `features/plannedActivities/PackMyBagPage.jsx` (aria-labels on toolbar controls), `features/profile/ProfileSettingsPage.jsx` (email field label association), `features/activities/ActivityForm.jsx` (copy fix)
+`features/activities/ActivitiesList.jsx`, `features/gear/GearList.jsx`, `features/destinations/DestinationList.jsx`, `features/plannedActivities/PlannedActivitiesList.jsx`, `features/plannedActivities/PackMyBagPage.jsx` (aria-labels on toolbar controls), `features/profile/ProfileSettingsPage.jsx` (email field label association), `features/activities/ActivityForm.jsx` (copy fix), `features/statistics/StatisticsView.jsx` + `StatsIcons.jsx` (gear-value highlight tile)
+
+**Backend — modified:**
+`services/statisticsService.js` (gear-value total)
 
 **Documentation — modified:**
 `README.md` (corrected stale Phase 0 status, added feature list, updated prerequisites, added Manual Testing Scripts section)

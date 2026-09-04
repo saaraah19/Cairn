@@ -8,7 +8,17 @@ This repository is under active development. See `docs/` for the full product, a
 
 ## Project Status
 
-Currently in **Phase 0 — Project Foundation**. See `docs/PROGRESS.md` for the authoritative, up-to-date implementation status.
+All core V1 features from the roadmap are implemented and verified: authentication (email/password + Google), activities with photos, gear with usage history, planned activities with a pack-my-bag flow, destinations, statistics, and a fully editable profile with data export/account deletion. Currently in **Phase 11 — Polish**. See `docs/PROGRESS.md` for the authoritative, up-to-date implementation status and what's next.
+
+## Features
+
+- **Activities** — log hikes/treks/camping trips with trail stats, conditions, photos, and gear used; search, filter, and sort your history
+- **Gear** — a personal closet with automatically-derived usage history across your activities
+- **Planned Activities** — plan ahead, then turn a plan into a real logged activity with one click
+- **Pack My Bag** — select gear for a planned trip with a live-updating weight total
+- **Destinations** — save places you want to visit, independent of any specific plan
+- **Statistics** — personal records and breakdowns derived from your activity history
+- **Profile & Settings** — editable profile, password management, light/dark/system theme, data export, and account deletion
 
 ## Repository Structure
 
@@ -23,7 +33,9 @@ cairn/
 ## Prerequisites
 
 - Node.js 18+ and npm
-- A MongoDB Atlas cluster (or local MongoDB instance) — only needed once you start Phase 1+; the app boots without one
+- A MongoDB Atlas cluster (or local MongoDB instance) — the app boots without one, but most features need it to actually persist data
+- Optional: a Google Cloud OAuth Client ID, for "Sign in with Google" — the app works fine without it, the button just won't appear
+- Optional: Cloudinary credentials, for photo uploads on activities, gear, and destinations — the app works fine without them, uploads just return a clear "not configured" message until set
 
 ## Local Setup
 
@@ -55,6 +67,23 @@ The app starts on `http://localhost:5173` by default and displays whether it can
 ## Environment Variables
 
 Each app has its own `.env.example` documenting the variables it needs (`client/.env.example`, `server/.env.example`). Never commit a real `.env` file — both are already git-ignored.
+
+## Manual Testing Scripts
+
+`server/scripts/` has a set of shell scripts that exercise each major feature end-to-end against a live database (run `bash scripts/<name>.sh` from `server/` while the backend is running):
+
+- `test-auth-flow.sh` — register/login/logout/refresh, wrong-password rejection
+- `test-activity-flow.sh` — activity CRUD, group ownership rejection, numbering
+- `test-photo-flow.sh` — Cloudinary photo upload/cover/delete (needs a real image file path as an argument)
+- `test-gear-flow.sh` — gear CRUD, usage-history derivation, cross-user rejection
+- `test-planned-activity-flow.sh` — plan → complete → link-to-activity flow
+- `test-pack-flow.sh` — Pack My Bag weight calculation and gear ownership check
+- `test-destination-flow.sh` — destination CRUD, ownership checks on Activities/Plans
+- `test-statistics-flow.sh` — totals/records/breakdowns against known values
+- `test-profile-flow.sh` — profile editing, username reuse, password change
+- `test-data-management-flow.sh` — export and account deletion (uses a disposable throwaway account, safe to run)
+
+These aren't a substitute for the formal automated test suite planned in Phase 12, but they're the fastest way to sanity-check a feature against a real database right now.
 
 ## Documentation
 

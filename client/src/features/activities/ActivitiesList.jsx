@@ -72,17 +72,22 @@ export function ActivitiesList() {
           <input
             type="search"
             placeholder="Search activities…"
+            aria-label="Search activities"
             value={search}
             onChange={(e) => handleFilterChange(setSearch)(e.target.value)}
           />
-          <select value={type} onChange={(e) => handleFilterChange(setType)(e.target.value)}>
+          <select
+            aria-label="Filter by type"
+            value={type}
+            onChange={(e) => handleFilterChange(setType)(e.target.value)}
+          >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
           </select>
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select aria-label="Sort by" value={sort} onChange={(e) => setSort(e.target.value)}>
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}

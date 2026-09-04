@@ -59,10 +59,15 @@ export function DestinationList() {
           <input
             type="search"
             placeholder="Search destinations…"
+            aria-label="Search destinations"
             value={search}
             onChange={(e) => handleFilterChange(setSearch)(e.target.value)}
           />
-          <select value={status} onChange={(e) => handleFilterChange(setStatus)(e.target.value)}>
+          <select
+            aria-label="Filter by status"
+            value={status}
+            onChange={(e) => handleFilterChange(setStatus)(e.target.value)}
+          >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}

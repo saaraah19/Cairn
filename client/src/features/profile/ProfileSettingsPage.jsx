@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.js'
 import { useTheme } from '../theme/useTheme.js'
 import {
@@ -6,8 +7,11 @@ import {
   changePasswordRequest,
   uploadProfilePictureRequest,
   removeProfilePictureRequest,
+  exportDataRequest,
+  deleteAccountRequest,
 } from './api.js'
 import '../activities/ActivityForm.css'
+import '../activities/ActivityDetail.css'
 import '../auth/authForms.css'
 import '../../pages/pages.css'
 import './ProfileSettingsPage.css'
@@ -180,8 +184,8 @@ function AccountSection({ user }) {
       <h2>Account</h2>
       <div className="form-grid">
         <div className="form-field">
-          <label>Email</label>
-          <input value={user.email} disabled />
+          <label htmlFor="account-email">Email</label>
+          <input id="account-email" value={user.email} disabled />
         </div>
         <div className="form-field">
           <label>Signed in with</label>
@@ -306,13 +310,137 @@ function PrivacySection({ user, onUpdated }) {
   )
 }
 
-function DataSection() {
+function DataSection({ user }) {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+  const hasPassword = user.authProviders?.includes('password')
+
+  const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState(null)
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [confirmation, setConfirmation] = useState('')
+  const [deletePassword, setDeletePassword] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
+
+  async function handleExport() {
+    setIsExporting(true)
+    setExportError(null)
+    try {
+      const blob = await exportDataRequest()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'cairn-export.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setExportError(err.message)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteAccountRequest({
+        confirmation,
+        currentPassword: hasPassword ? deletePassword : undefined,
+      })
+      await logout()
+      navigate('/')
+    } catch (err) {
+      setDeleteError(err.message)
+      setIsDeleting(false)
+    }
+  }
+
+  const canConfirmDelete = confirmation === 'DELETE' && (!hasPassword || deletePassword.length > 0)
+
   return (
     <section className="form-section">
       <h2>Data</h2>
-      <p className="auth-field-hint">
-        Exporting your data and account deletion are coming in a future update.
-      </p>
+
+      <div style={{ marginBottom: 'var(--space-md)' }}>
+        <p className="auth-field-hint" style={{ marginBottom: 'var(--space-sm)' }}>
+          Download everything Cairn has on you — profile, activities, planned activities,
+          destinations, gear, groups, and companions — as a JSON file.
+        </p>
+        {exportError && <div className="auth-form-error">{exportError}</div>}
+        <button className="secondary-action" onClick={handleExport} disabled={isExporting}>
+          {isExporting ? 'Preparing export…' : 'Export my data'}
+        </button>
+      </div>
+
+      <div>
+        <p className="auth-field-hint" style={{ marginBottom: 'var(--space-sm)' }}>
+          Permanently delete your account and everything in it. This can't be undone.
+        </p>
+        <button className="icon-button danger" onClick={() => setShowDeleteDialog(true)}>
+          Delete my account
+        </button>
+      </div>
+
+      {showDeleteDialog && (
+        <div className="confirm-dialog-backdrop" role="dialog" aria-modal="true">
+          <div className="confirm-dialog">
+            <h3>Delete your account?</h3>
+            <p>
+              This permanently removes your profile, activities, planned activities,
+              destinations, gear, and photos. This can't be undone.
+            </p>
+
+            {deleteError && <div className="auth-form-error">{deleteError}</div>}
+
+            <div className="form-field" style={{ marginBottom: 'var(--space-sm)' }}>
+              <label htmlFor="delete-confirmation">Type DELETE to confirm</label>
+              <input
+                id="delete-confirmation"
+                value={confirmation}
+                onChange={(e) => setConfirmation(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+
+            {hasPassword && (
+              <div className="form-field" style={{ marginBottom: 'var(--space-sm)' }}>
+                <label htmlFor="delete-password">Current password</label>
+                <input
+                  id="delete-password"
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="confirm-dialog-actions">
+              <button
+                className="icon-button"
+                onClick={() => {
+                  setShowDeleteDialog(false)
+                  setConfirmation('')
+                  setDeletePassword('')
+                  setDeleteError(null)
+                }}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="icon-button danger"
+                onClick={handleDelete}
+                disabled={!canConfirmDelete || isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Permanently delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -334,7 +462,7 @@ export function ProfileSettingsPage() {
         <AccountSection user={user} />
         <AppearanceSection />
         <PrivacySection user={user} onUpdated={updateUser} />
-        <DataSection />
+        <DataSection user={user} />
 
         <button className="logout-button" onClick={logout}>
           Log out

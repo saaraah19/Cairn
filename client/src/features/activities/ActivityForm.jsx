@@ -342,7 +342,7 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
         <h2>Gear</h2>
         {gearOptions.length === 0 ? (
           <p style={{ color: 'var(--color-mist)', fontSize: '0.85rem' }}>
-            No gear in your closet yet — add some from the Gear tab to select it here.
+            No gear in your closet yet — add some from Gear to select it here.
           </p>
         ) : (
           <div className="gear-checkbox-grid">

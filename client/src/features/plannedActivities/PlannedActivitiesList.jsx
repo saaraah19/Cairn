@@ -49,6 +49,7 @@ export function PlannedActivitiesList() {
       <div className="activities-header-row">
         <div className="activities-toolbar">
           <select
+            aria-label="Filter by status"
             value={status}
             onChange={(e) => {
               setStatus(e.target.value)

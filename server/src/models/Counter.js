@@ -15,6 +15,8 @@ counterSchema.index({ userId: 1, sequence: 1 }, { unique: true })
 
 const Counter = mongoose.model('Counter', counterSchema)
 
+export { Counter }
+
 export async function getNextSequenceValue(userId, sequence) {
   const counter = await Counter.findOneAndUpdate(
     { userId, sequence },

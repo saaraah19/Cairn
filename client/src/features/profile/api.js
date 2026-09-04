@@ -35,3 +35,17 @@ export async function uploadProfilePictureRequest(file) {
 export function removeProfilePictureRequest() {
   return request('/api/profile/picture', { method: 'DELETE' })
 }
+
+// Returns a blob, not JSON — downloads the export file directly.
+export async function exportDataRequest() {
+  const res = await fetch(`${API_BASE_URL}/api/profile/export`, { credentials: 'include' })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error?.message || 'Something went wrong. Please try again.')
+  }
+  return res.blob()
+}
+
+export function deleteAccountRequest(data) {
+  return request('/api/profile/account', { method: 'DELETE', body: JSON.stringify(data) })
+}

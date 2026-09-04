@@ -59,10 +59,15 @@ export function GearList() {
           <input
             type="search"
             placeholder="Search gear…"
+            aria-label="Search gear"
             value={search}
             onChange={(e) => handleFilterChange(setSearch)(e.target.value)}
           />
-          <select value={category} onChange={(e) => handleFilterChange(setCategory)(e.target.value)}>
+          <select
+            aria-label="Filter by category"
+            value={category}
+            onChange={(e) => handleFilterChange(setCategory)(e.target.value)}
+          >
             {CATEGORY_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}

@@ -20,6 +20,15 @@ export function errorHandler(err, req, res, next) { // eslint-disable-line no-un
     })
   }
 
+  // Origin rejected by the CORS check in app.js — a genuine "not allowed"
+  // rather than an unexpected server failure, so it shouldn't be logged as
+  // one or reported as a 500.
+  if (err.message === 'Not allowed by CORS') {
+    return res
+      .status(403)
+      .json({ success: false, error: { code: 'CORS_REJECTED', message: 'Origin not allowed.' } })
+  }
+
   const isApiError = err instanceof ApiError
   const status = isApiError ? err.status : 500
   const code = isApiError ? err.code : 'INTERNAL_SERVER_ERROR'

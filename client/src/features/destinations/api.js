@@ -1,15 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
-
-async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  })
-  const body = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(body?.error?.message || 'Something went wrong. Please try again.')
-  return body?.data
-}
+import { apiRequest, apiFetch } from '../../lib/apiClient.js'
 
 function toQueryString(params) {
   const search = new URLSearchParams()
@@ -21,42 +10,38 @@ function toQueryString(params) {
 }
 
 export function listDestinationsRequest(params) {
-  return request(`/api/destinations${toQueryString(params)}`)
+  return apiRequest(`/api/destinations${toQueryString(params)}`)
 }
 
 export function getDestinationRequest(id) {
-  return request(`/api/destinations/${id}`)
+  return apiRequest(`/api/destinations/${id}`)
 }
 
 export function createDestinationRequest(data) {
-  return request('/api/destinations', { method: 'POST', body: JSON.stringify(data) })
+  return apiRequest('/api/destinations', { method: 'POST', body: JSON.stringify(data) })
 }
 
 export function updateDestinationRequest(id, data) {
-  return request(`/api/destinations/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  return apiRequest(`/api/destinations/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
 export function deleteDestinationRequest(id) {
-  return request(`/api/destinations/${id}`, { method: 'DELETE' })
+  return apiRequest(`/api/destinations/${id}`, { method: 'DELETE' })
 }
 
 export function getDestinationRelatedRequest(id) {
-  return request(`/api/destinations/${id}/related`)
+  return apiRequest(`/api/destinations/${id}/related`)
 }
 
 export async function uploadDestinationCoverRequest(id, file) {
   const formData = new FormData()
   formData.append('photo', file)
-  const res = await fetch(`${API_BASE_URL}/api/destinations/${id}/cover-image`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  })
+  const res = await apiFetch(`/api/destinations/${id}/cover-image`, { method: 'POST', body: formData })
   const body = await res.json().catch(() => null)
   if (!res.ok) throw new Error(body?.error?.message || 'Something went wrong. Please try again.')
   return body?.data
 }
 
 export function removeDestinationCoverRequest(id) {
-  return request(`/api/destinations/${id}/cover-image`, { method: 'DELETE' })
+  return apiRequest(`/api/destinations/${id}/cover-image`, { method: 'DELETE' })
 }

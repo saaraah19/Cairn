@@ -85,6 +85,10 @@ Each app has its own `.env.example` documenting the variables it needs (`client/
 
 These aren't a substitute for the formal automated test suite planned in Phase 12, but they're the fastest way to sanity-check a feature against a real database right now.
 
+## Deployment
+
+See `DEPLOYMENT.md` for a step-by-step guide to deploying Cairn on Render (backend as a Web Service, frontend as a Static Site), including the cross-origin cookie configuration and external service setup (MongoDB Atlas, Google OAuth, Cloudinary) each deployment needs.
+
 ## Documentation
 
 Read these before making product or architectural decisions:

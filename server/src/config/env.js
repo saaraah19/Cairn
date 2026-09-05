@@ -12,6 +12,9 @@ export const env = {
   nodeEnv: required('NODE_ENV', 'development'),
   port: Number(required('PORT', 5000)),
   mongoUri: required('MONGODB_URI', ''),
+  // Comma-separated list supported (e.g. a Render default URL + a later
+  // custom domain) — see clientUrls below for the parsed array most code
+  // should actually use.
   clientUrl: required('CLIENT_URL', 'http://localhost:5173'),
   jwtAccessSecret: required('JWT_ACCESS_SECRET', ''),
   jwtRefreshSecret: required('JWT_REFRESH_SECRET', ''),
@@ -20,6 +23,8 @@ export const env = {
   cloudinaryApiKey: required('CLOUDINARY_API_KEY', ''),
   cloudinaryApiSecret: required('CLOUDINARY_API_SECRET', ''),
 }
+
+env.clientUrls = env.clientUrl.split(',').map((url) => url.trim()).filter(Boolean)
 
 if (env.nodeEnv === 'production' && (!env.jwtAccessSecret || !env.jwtRefreshSecret)) {
   throw new Error(

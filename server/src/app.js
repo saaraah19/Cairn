@@ -20,7 +20,22 @@ import { errorHandler } from './middleware/errorHandler.js'
 export function createApp() {
   const app = express()
 
-  app.use(cors({ origin: env.clientUrl, credentials: true }))
+  // origin as a function (rather than a plain string) lets us support a
+  // comma-separated CLIENT_URL list — e.g. Render's default *.onrender.com
+  // URL plus a custom domain added later — without needing '*' (which
+  // can't be combined with credentials: true).
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || env.clientUrls.includes(origin)) {
+          callback(null, true)
+        } else {
+          callback(new Error('Not allowed by CORS'))
+        }
+      },
+      credentials: true,
+    })
+  )
   app.use(express.json())
   app.use(cookieParser())
 

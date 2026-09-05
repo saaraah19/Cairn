@@ -1,24 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
-
-async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  })
-
-  const body = await res.json().catch(() => null)
-
-  if (!res.ok) {
-    const message = body?.error?.message || 'Something went wrong. Please try again.'
-    throw new Error(message)
-  }
-
-  return body?.data
-}
+import { apiRequest, apiFetch } from '../../lib/apiClient.js'
 
 function toQueryString(params) {
   const search = new URLSearchParams()
@@ -32,53 +12,54 @@ function toQueryString(params) {
 }
 
 export function listActivitiesRequest(params) {
-  return request(`/api/activities${toQueryString(params)}`)
+  return apiRequest(`/api/activities${toQueryString(params)}`)
 }
 
 export function getActivityRequest(id) {
-  return request(`/api/activities/${id}`)
+  return apiRequest(`/api/activities/${id}`)
 }
 
 export function createActivityRequest(data) {
-  return request('/api/activities', { method: 'POST', body: JSON.stringify(data) })
+  return apiRequest('/api/activities', { method: 'POST', body: JSON.stringify(data) })
 }
 
 export function updateActivityRequest(id, data) {
-  return request(`/api/activities/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+  return apiRequest(`/api/activities/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 }
 
 export function deleteActivityRequest(id) {
-  return request(`/api/activities/${id}`, { method: 'DELETE' })
+  return apiRequest(`/api/activities/${id}`, { method: 'DELETE' })
 }
 
 export function listGroupsRequest() {
-  return request('/api/groups')
+  return apiRequest('/api/groups')
 }
 
 export function createGroupRequest(name) {
-  return request('/api/groups', { method: 'POST', body: JSON.stringify({ name }) })
+  return apiRequest('/api/groups', { method: 'POST', body: JSON.stringify({ name }) })
 }
 
 export function listCompanionsRequest() {
-  return request('/api/companions')
+  return apiRequest('/api/companions')
 }
 
 export function createCompanionRequest(name) {
-  return request('/api/companions', { method: 'POST', body: JSON.stringify({ name }) })
+  return apiRequest('/api/companions', { method: 'POST', body: JSON.stringify({ name }) })
 }
 
 export function listPhotosRequest(activityId) {
-  return request(`/api/activities/${activityId}/photos`)
+  return apiRequest(`/api/activities/${activityId}/photos`)
 }
 
 export async function uploadPhotoRequest(activityId, file) {
   const formData = new FormData()
   formData.append('photo', file)
 
-  const res = await fetch(`${API_BASE_URL}/api/activities/${activityId}/photos`, {
+  // apiFetch (not apiRequest) — no Content-Type header, the browser sets
+  // the multipart boundary itself; still gets the retry-on-401 behavior.
+  const res = await apiFetch(`/api/activities/${activityId}/photos`, {
     method: 'POST',
-    credentials: 'include',
-    body: formData, // no Content-Type header — browser sets the multipart boundary
+    body: formData,
   })
 
   const body = await res.json().catch(() => null)
@@ -91,9 +72,9 @@ export async function uploadPhotoRequest(activityId, file) {
 }
 
 export function setCoverPhotoRequest(activityId, photoId) {
-  return request(`/api/activities/${activityId}/photos/${photoId}/cover`, { method: 'PATCH' })
+  return apiRequest(`/api/activities/${activityId}/photos/${photoId}/cover`, { method: 'PATCH' })
 }
 
 export function deletePhotoRequest(photoId) {
-  return request(`/api/photos/${photoId}`, { method: 'DELETE' })
+  return apiRequest(`/api/photos/${photoId}`, { method: 'DELETE' })
 }

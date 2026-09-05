@@ -25,13 +25,22 @@ export function verifyRefreshToken(token) {
   return jwt.verify(token, env.jwtRefreshSecret)
 }
 
-// Shared cookie options. httpOnly + sameSite=lax prevent the token from being
-// read by JS or sent cross-site; secure is enabled outside local dev.
-// See docs/02_TECHNICAL_ARCHITECTURE.md §8.
+// Shared cookie options. httpOnly prevents the token from being read by JS.
+// SameSite/secure depend on deployment topology: in local dev, frontend and
+// backend share "localhost" as their site (different ports don't matter for
+// SameSite purposes), so Lax works and doesn't require HTTPS. In production,
+// frontend and backend are commonly deployed as separate services on
+// different subdomains (e.g. Render's *.onrender.com is on the public
+// suffix list, making two Render services cross-site from each other) — Lax
+// cookies are silently dropped on cross-site fetch requests there. None+
+// Secure works correctly whether the deployment ends up same-origin or
+// cross-origin, and Secure is safe to require since production is always
+// HTTPS. See docs/02_TECHNICAL_ARCHITECTURE.md §8.
+const isProduction = env.nodeEnv === 'production'
 const baseCookieOptions = {
   httpOnly: true,
-  sameSite: 'lax',
-  secure: env.nodeEnv === 'production',
+  sameSite: isProduction ? 'none' : 'lax',
+  secure: isProduction,
 }
 
 export const ACCESS_COOKIE_NAME = 'cairn_access_token'

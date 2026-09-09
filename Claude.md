@@ -33,7 +33,7 @@ docs/01_PRODUCT_SPEC.md
 docs/02_TECHNICAL_ARCHITECTURE.md
 docs/03_UX_DESIGN_SPEC.md
 docs/04_DEVELOPMENT_ROADMAP.md
-docs/05_FUTURE_VISION.md
+docs/06_FUTURE_VISION.md
 ```
 
 Each document has a different responsibility.

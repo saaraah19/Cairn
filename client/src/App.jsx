@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './features/auth/AuthContext.jsx'
 import { useAuth } from './features/auth/useAuth.js'
 import { ThemeProvider } from './features/theme/ThemeProvider.jsx'
@@ -76,6 +76,22 @@ function AuthGate({ mode }) {
   )
 }
 
+// Redirects to "/" — used as a catch-all in both route trees below. In the
+// signed-out tree this lands on the landing page; in the signed-in tree it
+// lands on Home. Needed in *both* trees because a successful login/register
+// flips which tree is active without changing the URL — without this, a
+// user who submits the login form while sitting on "/login" would be left
+// on a URL the newly-active (signed-in) route tree has no match for.
+function RedirectHome() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    navigate('/', { replace: true })
+  }, [navigate])
+
+  return null
+}
+
 function AppContent() {
   const { user, isLoading } = useAuth()
   const { setPreference } = useTheme()
@@ -106,7 +122,7 @@ function AppContent() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthGate mode="login" />} />
         <Route path="/register" element={<AuthGate mode="register" />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<RedirectHome />} />
       </Routes>
     )
   }
@@ -133,6 +149,7 @@ function AppContent() {
         <Route path="/statistics" element={<StatisticsPage />} />
         <Route path="/profile" element={<ProfileSettingsPage />} />
       </Route>
+      <Route path="*" element={<RedirectHome />} />
     </Routes>
   )
 }

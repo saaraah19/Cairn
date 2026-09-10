@@ -120,7 +120,46 @@ A full categorized analysis (Must Fix / Should Improve / V1.1 Improvements / Maj
 - **V1.1 candidates**: Home page dashboard (highest-leverage single item — most-visited, least-developed screen), Outdoor Journey/Playback (explicitly deferred from Phase 8), bulk import, gear-picker pagination, saved filter preferences, print/PDF export, personal notifications, currency flexibility.
 - **Major Future Features** (all explicitly deferred, `06_FUTURE_VISION.md` territory, none currently justified by product signal): community/public feed, maps/GPX/route recording, native mobile app, offline mode, AI features, group accounts.
 
-**Recommended immediate next step** (Claude's recommendation, not a decision): rate limiting (Must-Fix §A1) — small, urgent, zero product-direction implications. Everything after that is a genuine product-owner choice between hardening what exists (§A2 → B1 → B2) versus improving daily-use experience (Home dashboard, §C1). Nothing in the Major Future Features category is currently justified.
+**Recommended immediate next step** (Claude's recommendation, not a decision, as of the original checkpoint): rate limiting (Must-Fix §A1) — small, urgent, zero product-direction implications. This recommendation has since been superseded by an explicit product-owner decision — see below.
+
+---
+
+## Community & Landing Page (added 2026-09-09; architecture finalized and implementation approved same day)
+
+**Community:**
+**STATUS = ARCHITECTURE FINALIZED → IMPLEMENTATION APPROVED.**
+The last open decision (§16 of `docs/08_COMMUNITY_PROPOSAL.md` — how `Report` records get reviewed, given no moderator role exists in the codebase) was resolved by the product owner: reports are reviewed manually/out-of-band, no moderator role or dashboard is introduced. Implementation is now underway, milestone by milestone, per the order in `08_COMMUNITY_PROPOSAL.md` §13 (M0 Landing Page → M1 Foundation → M2 Public Activity View → ... → M11 Polish). Each milestone's actual implementation status is tracked below as it happens — do not assume a milestone is complete because it's been discussed; only mark it so once verified, per this file's existing discipline.
+
+**Landing page (M0): see the "Community Milestone Progress" section below for live status.**
+
+See `docs/07_POST_V1_ROADMAP.md` for the consolidated post-V1 priority list and `docs/08_COMMUNITY_PROPOSAL.md` for the full finalized architecture.
+
+---
+
+## Community Milestone Progress
+
+| Milestone | Status | Notes |
+|---|---|---|
+| M0 — Landing Page | IMPLEMENTED — build + lint clean; **visual/device review not yet confirmed by product owner** | New: `client/src/pages/LandingPage.jsx`, `LandingPage.css`, `client/src/components/FeatureIcons.jsx`. Modified: `client/src/App.jsx` (real `/`, `/login`, `/register` routes for unauthenticated visitors, replacing the bare login-only gate). No backend changes. `npm run build` and `oxlint` both pass clean; no screenshot/visual confirmation has been done. |
+| M1 — Community Foundation | NOT STARTED | |
+| M2 — Public Activity View | NOT STARTED | |
+| M3 — Public Profiles | NOT STARTED | |
+| M4 — Explore Feed | NOT STARTED | |
+| M5 — Kudos | NOT STARTED | |
+| M6 — Comments | NOT STARTED | |
+| M7 — Reporting | NOT STARTED | |
+| M8 — Following | NOT STARTED | |
+| M9 — Notifications Inbox | NOT STARTED | |
+| M10 — Cross-Feature Security Audit | NOT STARTED | |
+| M11 — Polish | NOT STARTED | |
+
+This table will be updated as each milestone is actually completed and verified — never marked done in advance.
+
+**Landing page:**
+**STATUS = PLANNED / NOT IMPLEMENTED.**
+Confirmed by direct inspection: unauthenticated visitors currently see a bare login/register form (`client/src/App.jsx`'s `AuthGate`), with no explanation of what Cairn is. Approved as an independent milestone, sequenced before or alongside Community Foundation work — see `docs/08_COMMUNITY_PROPOSAL.md` §11 and its milestone M0.
+
+See `docs/07_POST_V1_ROADMAP.md` (newly created 2026-09-09 — it was referenced by this file and by `HANDOVER.md` but had never actually been committed to the repository) for the consolidated post-V1 priority list including Community's status alongside the pre-existing Must Fix / Should Improve / V1.1 items.
 
 ---
 

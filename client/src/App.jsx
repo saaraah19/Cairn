@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './features/auth/AuthContext.jsx'
 import { useAuth } from './features/auth/useAuth.js'
 import { ThemeProvider } from './features/theme/ThemeProvider.jsx'
@@ -9,6 +9,7 @@ import { LoginForm } from './features/auth/LoginForm.jsx'
 import { AuthLayout } from './layouts/AuthLayout.jsx'
 import { AppShell } from './layouts/AppShell.jsx'
 import { LoadingState } from './components/LoadingState.jsx'
+import { LandingPage } from './pages/LandingPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { MyOutdoorsPage } from './pages/MyOutdoorsPage.jsx'
 import { GearPage } from './pages/GearPage.jsx'
@@ -60,15 +61,15 @@ function BackendStatus() {
   return <span className="status-pill">Checking backend…</span>
 }
 
-function AuthGate() {
-  const [mode, setMode] = useState('login')
+function AuthGate({ mode }) {
+  const navigate = useNavigate()
 
   return (
     <AuthLayout>
       {mode === 'login' ? (
-        <LoginForm onSwitchToRegister={() => setMode('register')} />
+        <LoginForm onSwitchToRegister={() => navigate('/register')} />
       ) : (
-        <RegisterForm onSwitchToLogin={() => setMode('login')} />
+        <RegisterForm onSwitchToLogin={() => navigate('/login')} />
       )}
       <BackendStatus />
     </AuthLayout>
@@ -100,7 +101,14 @@ function AppContent() {
   }
 
   if (!user) {
-    return <AuthGate />
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<AuthGate mode="login" />} />
+        <Route path="/register" element={<AuthGate mode="register" />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    )
   }
 
   return (

@@ -77,6 +77,22 @@ const activitySchema = new mongoose.Schema(
       default: 'private',
     },
 
+    // Community — see docs/08_COMMUNITY_PROPOSAL.md §2. Deliberately a
+    // top-level sibling of `visibility`, not nested inside `review`: this is
+    // the one piece of activity text a user explicitly writes for public
+    // consumption, and it must stay structurally separate from
+    // `review.notes`, which is never public under any circumstance.
+    publicCaption: { type: String, trim: true, maxlength: 500, default: '' },
+
+    // Community — denormalized, read-optimized aggregate of Kudos documents.
+    // The Kudos collection remains the source of truth; this field exists
+    // purely so feed cards/activity detail don't need a count query per
+    // activity. Full consistency strategy (atomic guarded increment/decrement,
+    // compensating rollback, never-negative guard) in
+    // docs/08_COMMUNITY_PROPOSAL.md §4. Not settable via any client input —
+    // only ever mutated by the kudos give/remove service functions.
+    kudosCount: { type: Number, default: 0, min: 0 },
+
     // Reserved for Phase 3's photo slice (Cloudinary) — not yet populated.
     coverPhotoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Photo', default: null },
   },
@@ -88,6 +104,10 @@ activitySchema.index({ userId: 1, date: -1 })
 activitySchema.index({ userId: 1, type: 1 })
 activitySchema.index({ userId: 1, destinationId: 1 })
 activitySchema.index({ userId: 1, 'social.groupId': 1 })
+// Community — feed queries (Explore + Following, see
+// docs/08_COMMUNITY_PROPOSAL.md §9). Does not replace the (userId, date)
+// index above, which serves the private "my activities" list.
+activitySchema.index({ visibility: 1, date: -1 })
 // Lightweight partial-match search across name/place/wilaya/notes.
 activitySchema.index({ name: 'text', 'location.placeName': 'text', 'location.wilaya': 'text', 'review.notes': 'text' })
 

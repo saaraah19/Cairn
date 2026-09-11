@@ -1,0 +1,110 @@
+.public-profile {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.public-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.public-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.public-profile-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-moss);
+  color: #fdfaf6;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+.public-profile-header h1 {
+  font-size: 1.4rem;
+  margin-bottom: 0.15rem;
+}
+
+.public-profile-username {
+  color: var(--color-mist);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.public-profile-location {
+  color: var(--color-mist);
+  font-size: 0.85rem;
+  margin: 0.15rem 0 0;
+}
+
+.public-profile-bio {
+  margin-top: var(--space-md);
+  line-height: 1.55;
+}
+
+.public-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  margin: var(--space-lg) 0;
+}
+
+.public-profile-stat {
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  text-align: center;
+}
+
+.public-profile-stat-value {
+  display: block;
+  font-family: var(--font-data);
+  font-size: 1.2rem;
+  color: var(--color-ink);
+}
+
+.public-profile-stat-label {
+  font-size: 0.72rem;
+  color: var(--color-mist);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.public-profile-section-title {
+  font-size: 1.05rem;
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-sm);
+}
+
+.public-profile-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.public-profile-activity-link {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-sm) 0;
+  border-bottom: var(--border-hairline);
+  text-decoration: none;
+  color: inherit;
+}
+
+.public-profile-activity-name {
+  font-weight: 500;
+}
+
+.public-profile-activity-meta {
+  color: var(--color-mist);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}

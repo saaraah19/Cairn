@@ -270,6 +270,8 @@ function AppearanceSection() {
 function PrivacySection({ user, onUpdated }) {
   const [value, setValue] = useState(user.preferences?.defaultActivityVisibility ?? 'private')
   const [isSaving, setIsSaving] = useState(false)
+  const [isPublicProfile, setIsPublicProfile] = useState(user.isPublicProfile ?? false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   async function handleChange(next) {
     setValue(next)
@@ -282,6 +284,19 @@ function PrivacySection({ user, onUpdated }) {
       // person can just try again from the same control.
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function handlePublicProfileChange(next) {
+    setIsPublicProfile(next)
+    setIsSavingProfile(true)
+    try {
+      const data = await updateProfileRequest({ isPublicProfile: next })
+      onUpdated(data.user)
+    } catch {
+      setIsPublicProfile(!next)
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
@@ -306,6 +321,22 @@ function PrivacySection({ user, onUpdated }) {
           </label>
         ))}
       </div>
+
+      <p className="auth-field-hint" style={{ marginTop: 'var(--space-md)', marginBottom: 'var(--space-sm)' }}>
+        A public profile lets other hikers find you in Cairn Community and see your public
+        activities together in one place. This is separate from making individual activities
+        public — you can have public activities without a public profile, or a public profile
+        with none yet.
+      </p>
+      <label>
+        <input
+          type="checkbox"
+          checked={isPublicProfile}
+          disabled={isSavingProfile}
+          onChange={(e) => handlePublicProfileChange(e.target.checked)}
+        />
+        {' '}Make my profile public
+      </label>
     </section>
   )
 }

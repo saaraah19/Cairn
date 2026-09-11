@@ -21,6 +21,10 @@ export const updateProfileSchema = z.object({
       defaultActivityVisibility: z.enum(['private', 'public']).optional(),
     })
     .optional(),
+  // Community — see docs/08_COMMUNITY_PROPOSAL.md §3-4. Deliberately its own
+  // top-level field, not nested in preferences: this controls public
+  // discoverability, not a personal display preference.
+  isPublicProfile: z.boolean().optional(),
 })
 
 export const changePasswordSchema = z.object({

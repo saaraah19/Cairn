@@ -65,6 +65,16 @@ const userSchema = new mongoose.Schema(
         default: 'private',
       },
     },
+    // Community — see docs/08_COMMUNITY_PROPOSAL.md §3, §4. Deliberately
+    // decoupled from Activity.visibility: a user can have public activities
+    // with no public profile, or a public profile with zero public
+    // activities. Default false — profiles start private, matching
+    // Activity.visibility's own default. Also gates follow-eligibility
+    // (§6): a user can only be followed by others once this is true.
+    isPublicProfile: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 )

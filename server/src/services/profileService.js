@@ -31,6 +31,7 @@ export async function updateProfile(userId, data) {
   if (data.preferences) {
     user.preferences = { ...user.preferences.toObject(), ...data.preferences }
   }
+  if (data.isPublicProfile !== undefined) user.isPublicProfile = data.isPublicProfile
 
   await user.save()
   return user

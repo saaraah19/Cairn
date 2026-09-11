@@ -24,3 +24,26 @@ export function giveKudosRequest(activityId) {
 export function removeKudosRequest(activityId) {
   return apiRequest(`/api/community/activities/${activityId}/kudos`, { method: 'DELETE' })
 }
+
+export function getCommentsRequest(activityId, { cursor } = {}) {
+  const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
+  return apiRequest(`/api/community/activities/${activityId}/comments${qs}`)
+}
+
+export function postCommentRequest(activityId, text) {
+  return apiRequest(`/api/community/activities/${activityId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+export function updateCommentRequest(commentId, text) {
+  return apiRequest(`/api/community/comments/${commentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ text }),
+  })
+}
+
+export function deleteCommentRequest(commentId) {
+  return apiRequest(`/api/community/comments/${commentId}`, { method: 'DELETE' })
+}

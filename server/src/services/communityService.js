@@ -135,13 +135,14 @@ export async function getPublicActivityById(activityId) {
   return toPublicActivityDTO(activity)
 }
 
-// Cursor pagination (date + _id tiebreaker), not offset/page pagination —
-// a deliberate product-owner instruction for every Community list endpoint
-// (docs/08_COMMUNITY_PROPOSAL.md §7/§9), even though the private activity
-// list (activityService.listActivities) uses offset pagination. This same
-// shape is reused by the Explore/Following feeds in a later milestone.
-export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } = {}) {
-  const filter = { userId, visibility: 'public' }
+// Shared cursor-pagination core (date + _id tiebreaker), not offset/page
+// pagination — a deliberate product-owner instruction for every Community
+// list endpoint (docs/08_COMMUNITY_PROPOSAL.md §7/§9), even though the
+// private activity list (activityService.listActivities) uses offset
+// pagination. Used by both listPublicActivitiesByUser (M3) and
+// listPublicFeed (M4) — same query shape, different base filter.
+async function paginatePublicActivities(baseFilter, { cursor, limit = 12 } = {}) {
+  const filter = { ...baseFilter, visibility: 'public' }
 
   if (cursor) {
     const [dateIso, lastId] = cursor.split('_')
@@ -160,6 +161,34 @@ export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } 
   const nextCursor = hasMore && last ? `${last.date.toISOString()}_${last._id}` : null
 
   return { activities, nextCursor }
+}
+
+export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } = {}) {
+  return paginatePublicActivities({ userId }, { cursor, limit })
+}
+
+// Explore feed — global, chronological, optionally filtered by type/wilaya.
+// No ranking, no "For You" logic, no popularity sort: strictly
+// { date: -1, _id: -1 }, matching docs/08_COMMUNITY_PROPOSAL.md §6-7's
+// explicit rejection of algorithmic/trending feeds. wilaya uses the same
+// case-insensitive substring match as the private activity list
+// (activityService.listActivities), for a consistent filtering feel
+// between "my activities" and "Explore".
+//
+// `scope: 'following'` is intentionally not handled here yet — that
+// requires the Follow model, which doesn't exist until M8. Passing it
+// today throws a clear validation error rather than silently falling back
+// to Explore, which would be a confusing, easy-to-miss product behavior.
+export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, limit = 12 } = {}) {
+  if (scope !== 'explore') {
+    throw new ApiError(400, 'VALIDATION_ERROR', `Feed scope "${scope}" is not available yet.`)
+  }
+
+  const filter = {}
+  if (type) filter.type = type
+  if (wilaya) filter['location.wilaya'] = new RegExp(wilaya, 'i')
+
+  return paginatePublicActivities(filter, { cursor, limit })
 }
 
 // Looks up a single profile for public display. Same non-distinguishing

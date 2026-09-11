@@ -1,0 +1,24 @@
+.explore-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-lg);
+}
+
+.explore-load-more button {
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-md);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.explore-load-more button:hover:not(:disabled) {
+  border-color: var(--color-moss);
+}
+
+.explore-load-more button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { getActivity, getProfile } from '../controllers/communityController.js'
+import { getActivity, getProfile, getFeed } from '../controllers/communityController.js'
 import { optionalAuthenticate } from '../middleware/optionalAuthenticate.js'
 
 // Deliberately a separate router from activity.routes.js, not a set of
@@ -12,6 +12,7 @@ import { optionalAuthenticate } from '../middleware/optionalAuthenticate.js'
 const router = Router()
 router.use(optionalAuthenticate)
 
+router.get('/feed', getFeed)
 router.get('/activities/:id', getActivity)
 router.get('/users/:username', getProfile)
 

@@ -13,6 +13,7 @@ import { LandingPage } from './pages/LandingPage.jsx'
 import { PublicPageLayout } from './layouts/PublicPageLayout.jsx'
 import { PublicActivityDetail } from './features/community/PublicActivityDetail.jsx'
 import { PublicProfile } from './features/community/PublicProfile.jsx'
+import { ExplorePage } from './features/community/ExplorePage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { MyOutdoorsPage } from './pages/MyOutdoorsPage.jsx'
 import { GearPage } from './pages/GearPage.jsx'
@@ -126,6 +127,7 @@ function AppContent() {
         <Route path="/login" element={<AuthGate mode="login" />} />
         <Route path="/register" element={<AuthGate mode="register" />} />
         <Route element={<PublicPageLayout />}>
+          <Route path="/explore" element={<ExplorePage />} />
           <Route path="/community/activities/:id" element={<PublicActivityDetail />} />
           <Route path="/community/users/:username" element={<PublicProfile />} />
         </Route>
@@ -157,6 +159,7 @@ function AppContent() {
         <Route path="/profile" element={<ProfileSettingsPage />} />
         <Route path="/community/activities/:id" element={<PublicActivityDetail />} />
         <Route path="/community/users/:username" element={<PublicProfile />} />
+        <Route path="/explore" element={<ExplorePage />} />
       </Route>
       <Route path="*" element={<RedirectHome />} />
     </Routes>

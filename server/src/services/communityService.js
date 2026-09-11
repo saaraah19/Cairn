@@ -4,6 +4,7 @@ import { Group } from '../models/Group.js'
 import { Destination } from '../models/Destination.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { getPublicStatistics } from './communityStatisticsService.js'
+import { hasUserGivenKudos } from './kudosService.js'
 
 // Whitelist-only public DTO builders — see docs/08_COMMUNITY_PROPOSAL.md §2
 // (Activity field matrix) and §3 (Profile field matrix). Every field below
@@ -127,12 +128,17 @@ export function toPublicProfileDTO(user) {
 // e.g. destinationService.getOwnedDestination). A public → private flip
 // takes effect immediately on the next read, since nothing here is cached
 // (docs/08_COMMUNITY_PROPOSAL.md §9).
-export async function getPublicActivityById(activityId) {
+export async function getPublicActivityById(activityId, viewerUserId) {
   const activity = await Activity.findOne({ _id: activityId, visibility: 'public' })
   if (!activity) {
     throw new ApiError(404, 'NOT_FOUND', 'Activity not found.')
   }
-  return toPublicActivityDTO(activity)
+  const dto = await toPublicActivityDTO(activity)
+  // hasKudos reflects the specific person viewing, so it's attached here
+  // (per-request) rather than inside the DTO builder itself, which has no
+  // notion of "who's asking" — only "what's this activity's public shape."
+  dto.hasKudos = await hasUserGivenKudos(viewerUserId, activityId)
+  return dto
 }
 
 // Shared cursor-pagination core (date + _id tiebreaker), not offset/page
@@ -181,7 +187,7 @@ export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } 
 // to Explore, which would be a confusing, easy-to-miss product behavior.
 export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, limit = 12 } = {}) {
   if (scope !== 'explore') {
-    throw new ApiError(400, 'VALIDATION_ERROR', `Feed scope "${scope}" is not available yet.`)
+    throw new ApiError(422, 'VALIDATION_ERROR', `Feed scope "${scope}" is not available yet.`)
   }
 
   const filter = {}

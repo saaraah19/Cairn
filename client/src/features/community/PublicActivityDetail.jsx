@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { getPublicActivityRequest } from './api.js'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { getPublicActivityRequest, giveKudosRequest, removeKudosRequest } from './api.js'
+import { useAuth } from '../auth/useAuth.js'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import {
@@ -17,9 +18,13 @@ import './PublicActivityDetail.css'
 
 export function PublicActivityDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [activity, setActivity] = useState(null)
   const [error, setError] = useState(null)
   const [loadedId, setLoadedId] = useState(null)
+  const [isTogglingKudos, setIsTogglingKudos] = useState(false)
+  const [kudosError, setKudosError] = useState(null)
 
   const isLoading = loadedId !== id && !error
 
@@ -60,6 +65,25 @@ export function PublicActivityDetail() {
       />
     )
   }
+
+  async function toggleKudos() {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setKudosError(null)
+    setIsTogglingKudos(true)
+    try {
+      const result = activity.hasKudos ? await removeKudosRequest(activity.id) : await giveKudosRequest(activity.id)
+      setActivity((prev) => ({ ...prev, kudosCount: result.kudosCount, hasKudos: result.hasKudos }))
+    } catch (err) {
+      setKudosError(err.message)
+    } finally {
+      setIsTogglingKudos(false)
+    }
+  }
+
+  const isOwnActivity = user && String(user._id) === String(activity.authorId)
 
   const { location, trail, conditions, review, social, destination } = activity
 
@@ -132,6 +156,17 @@ export function PublicActivityDetail() {
       <div className="public-activity-kudos">
         <span className="public-activity-kudos-count">{activity.kudosCount}</span>
         <span>kudos</span>
+        {!isOwnActivity && (
+          <button
+            type="button"
+            className="public-activity-kudos-button"
+            onClick={toggleKudos}
+            disabled={isTogglingKudos}
+          >
+            {activity.hasKudos ? 'Kudos given ✓' : 'Give kudos'}
+          </button>
+        )}
+        {kudosError && <span className="public-activity-kudos-error">{kudosError}</span>}
       </div>
     </div>
   )

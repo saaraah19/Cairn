@@ -16,3 +16,11 @@ export function getFeedRequest({ scope = 'explore', type, wilaya, cursor } = {})
   if (cursor) params.set('cursor', cursor)
   return apiRequest(`/api/community/feed?${params.toString()}`)
 }
+
+export function giveKudosRequest(activityId) {
+  return apiRequest(`/api/community/activities/${activityId}/kudos`, { method: 'POST' })
+}
+
+export function removeKudosRequest(activityId) {
+  return apiRequest(`/api/community/activities/${activityId}/kudos`, { method: 'DELETE' })
+}

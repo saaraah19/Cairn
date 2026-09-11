@@ -107,9 +107,9 @@ async function run() {
     try {
       await listPublicFeed({ scope: 'following' })
     } catch (err) {
-      rejectedFollowing = err.status === 400
+      rejectedFollowing = err.status === 422
     }
-    assert(rejectedFollowing, 'scope="following" is explicitly rejected (400), not silently treated as Explore')
+    assert(rejectedFollowing, 'scope="following" is explicitly rejected (422), not silently treated as Explore')
   } finally {
     Activity.find = originalFind
   }

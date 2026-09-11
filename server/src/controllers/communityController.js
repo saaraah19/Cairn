@@ -3,7 +3,7 @@ import { success } from '../utils/apiResponse.js'
 
 export async function getActivity(req, res, next) {
   try {
-    const activity = await getPublicActivityById(req.params.id)
+    const activity = await getPublicActivityById(req.params.id, req.userId)
     success(res, { activity })
   } catch (err) {
     next(err)

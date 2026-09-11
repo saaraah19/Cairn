@@ -51,9 +51,9 @@ else
 fi
 echo -e "\n"
 
-echo "=== 5. scope=following should be rejected (not silently treated as Explore) — expect 400 ==="
+echo "=== 5. scope=following should be rejected (not silently treated as Explore) — expect 422 ==="
 curl -s -w " [HTTP %{http_code}]" "$BASE_URL/api/community/feed?scope=following"
 echo -e "\n"
 
 rm -f "$JAR"
-echo "=== Done. Steps 2 and 3 must show no leak line. Step 4's two pages must not share any activity id. Step 5 must show HTTP 400. ==="
+echo "=== Done. Steps 2 and 3 must show no leak line. Step 4's two pages must not share any activity id. Step 5 must show HTTP 422. ==="

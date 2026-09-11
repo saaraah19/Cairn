@@ -95,6 +95,31 @@
   font-weight: 600;
 }
 
+.public-activity-kudos-button {
+  margin-left: auto;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.public-activity-kudos-button:hover:not(:disabled) {
+  border-color: var(--color-moss);
+}
+
+.public-activity-kudos-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.public-activity-kudos-error {
+  color: var(--color-clay);
+  font-size: 0.82rem;
+}
+
 .public-activity-back-link {
   color: var(--color-moss-deep);
   text-decoration: none;

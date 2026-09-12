@@ -5,8 +5,10 @@ import {
   postCommentRequest,
   updateCommentRequest,
   deleteCommentRequest,
+  reportCommentRequest,
 } from './api.js'
 import { formatDate } from '../activities/formatters.js'
+import { ReportButton } from './ReportButton.jsx'
 import './CommentSection.css'
 
 function CommentAuthor({ comment }) {
@@ -96,6 +98,13 @@ function CommentItem({ comment, currentUser, isActivityOwner, onUpdated, onDelet
               Delete
             </button>
           )}
+        </div>
+      )}
+
+      {/* Reporting is for someone else's comment — never your own. */}
+      {currentUser && !isAuthor && !isEditing && (
+        <div className="comment-actions">
+          <ReportButton onSubmit={(reason, details) => reportCommentRequest(comment.id, reason, details)} />
         </div>
       )}
     </li>

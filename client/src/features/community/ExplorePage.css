@@ -22,3 +22,27 @@
   opacity: 0.6;
   cursor: default;
 }
+
+.explore-scope-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  border-bottom: var(--border-hairline);
+}
+
+.explore-scope-tab {
+  padding: 0.5rem 0.2rem;
+  margin-bottom: -1px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-mist);
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.explore-scope-tab.active {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-moss-deep);
+  font-weight: 500;
+}

@@ -47,3 +47,25 @@ export function updateCommentRequest(commentId, text) {
 export function deleteCommentRequest(commentId) {
   return apiRequest(`/api/community/comments/${commentId}`, { method: 'DELETE' })
 }
+
+export function reportActivityRequest(activityId, reason, details) {
+  return apiRequest(`/api/community/activities/${activityId}/reports`, {
+    method: 'POST',
+    body: JSON.stringify(details ? { reason, details } : { reason }),
+  })
+}
+
+export function reportCommentRequest(commentId, reason, details) {
+  return apiRequest(`/api/community/comments/${commentId}/reports`, {
+    method: 'POST',
+    body: JSON.stringify(details ? { reason, details } : { reason }),
+  })
+}
+
+export function followUserRequest(username) {
+  return apiRequest(`/api/community/users/${username}/follow`, { method: 'POST' })
+}
+
+export function unfollowUserRequest(username) {
+  return apiRequest(`/api/community/users/${username}/follow`, { method: 'DELETE' })
+}

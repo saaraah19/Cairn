@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar.jsx'
 import { BottomTabBar } from './BottomTabBar.jsx'
 import { Wordmark } from '../components/Logo.jsx'
+import { NotificationBell } from '../features/notifications/NotificationBell.jsx'
 import './AppShell.css'
 
 export function AppShell() {
@@ -12,6 +13,7 @@ export function AppShell() {
       <div className="app-shell-main">
         <header className="mobile-header">
           <Wordmark />
+          <NotificationBell />
         </header>
 
         <main className="app-shell-content">

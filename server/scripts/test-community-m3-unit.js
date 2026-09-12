@@ -95,6 +95,7 @@ async function run() {
     select: function () { return this },
     sort: function () { return this },
     limit: function () { return this },
+    populate: function () { return this },
     then: (resolve) => resolve([]),
   })
 

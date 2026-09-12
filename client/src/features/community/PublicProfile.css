@@ -108,3 +108,30 @@
   font-size: 0.85rem;
   margin-top: 0.15rem;
 }
+
+.public-profile-follow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.public-profile-follow-button {
+  padding: 0.45rem 1.2rem;
+  border-radius: var(--radius-md);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.public-profile-follow-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.public-profile-follow-error {
+  color: var(--color-clay);
+  font-size: 0.82rem;
+}

@@ -15,6 +15,7 @@
 // Usage: node scripts/test-community-m2-unit.js
 
 import { Activity } from '../src/models/Activity.js'
+import { Photo } from '../src/models/Photo.js'
 import { getPublicActivityById } from '../src/services/communityService.js'
 
 let failures = 0
@@ -56,12 +57,21 @@ async function run() {
   // real MongoDB query would do — this is what proves the service filters at the
   // query level rather than fetching first and checking visibility in JS after.
   const originalFindOne = Activity.findOne
-  Activity.findOne = async (filter) => {
-    if (filter._id === 'act-public-1' && filter.visibility === 'public') {
-      return fixturePublicActivity
-    }
-    return null
+  Activity.findOne = (filter) => {
+    const found = filter._id === 'act-public-1' && filter.visibility === 'public' ? fixturePublicActivity : null
+    // Chainable AND thenable, mirroring a real Mongoose Query — the real
+    // service now calls .populate('coverPhotoId', 'secureUrl') on this
+    // before awaiting it (for the card-thumbnail cover photo), so the stub
+    // needs to support that call even though this test doesn't care about
+    // photo data specifically.
+    return { populate: () => ({ then: (resolve) => resolve(found) }), then: (resolve) => resolve(found) }
   }
+
+  // resolvePublicPhotos queries Photo directly — stub it to an empty
+  // gallery so this test stays about the Activity whitelist, not photos.
+  Photo.find = () => ({
+    select: () => ({ sort: () => ({ lean: () => Promise.resolve([]) }) }),
+  })
 
   try {
     const publicResult = await getPublicActivityById('act-public-1')

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Wordmark } from '../components/Logo.jsx'
+import { NotificationBell } from '../features/notifications/NotificationBell.jsx'
 import { navItems } from './navItems.js'
 import './Sidebar.css'
 
@@ -8,6 +9,7 @@ export function Sidebar() {
     <nav className="sidebar" aria-label="Main navigation">
       <div className="sidebar-brand">
         <Wordmark />
+        <NotificationBell />
       </div>
 
       <ul className="sidebar-list">

@@ -1,8 +1,13 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import './PhotoLightbox.css'
+
+// Swipe threshold in pixels — deliberately generous so an incidental small
+// finger movement while tapping to close doesn't get misread as a swipe.
+const SWIPE_THRESHOLD = 50
 
 export function PhotoLightbox({ photos, index, onClose, onNavigate }) {
   const photo = photos[index]
+  const touchStartX = useRef(null)
 
   const goPrev = useCallback(() => {
     onNavigate((index - 1 + photos.length) % photos.length)
@@ -21,6 +26,18 @@ export function PhotoLightbox({ photos, index, onClose, onNavigate }) {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose, goPrev, goNext, photos.length])
+
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e) {
+    if (touchStartX.current == null || photos.length <= 1) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    if (delta > SWIPE_THRESHOLD) goPrev()
+    else if (delta < -SWIPE_THRESHOLD) goNext()
+    touchStartX.current = null
+  }
 
   if (!photo) return null
 
@@ -49,7 +66,12 @@ export function PhotoLightbox({ photos, index, onClose, onNavigate }) {
         </button>
       )}
 
-      <div className="lightbox-image-wrap" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="lightbox-image-wrap"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <img src={photo.secureUrl} alt="" />
       </div>
 

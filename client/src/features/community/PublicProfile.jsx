@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { getPublicProfileRequest } from './api.js'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { getPublicProfileRequest, followUserRequest, unfollowUserRequest } from './api.js'
+import { useAuth } from '../auth/useAuth.js'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import { formatDate, formatDistance, TYPE_LABELS } from '../activities/formatters.js'
@@ -8,9 +9,13 @@ import './PublicProfile.css'
 
 export function PublicProfile() {
   const { username } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [loadedUsername, setLoadedUsername] = useState(null)
+  const [isTogglingFollow, setIsTogglingFollow] = useState(false)
+  const [followError, setFollowError] = useState(null)
 
   const isLoading = loadedUsername !== username && !error
 
@@ -53,6 +58,24 @@ export function PublicProfile() {
   }
 
   const { profile, statistics, activities } = data
+  const isOwnProfile = user && String(user._id) === String(profile.id)
+
+  async function toggleFollow() {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setFollowError(null)
+    setIsTogglingFollow(true)
+    try {
+      const result = data.isFollowing ? await unfollowUserRequest(username) : await followUserRequest(username)
+      setData((prev) => ({ ...prev, isFollowing: result.isFollowing }))
+    } catch (err) {
+      setFollowError(err.message)
+    } finally {
+      setIsTogglingFollow(false)
+    }
+  }
 
   return (
     <div className="public-profile">
@@ -70,6 +93,20 @@ export function PublicProfile() {
           {profile.location && <p className="public-profile-location">{profile.location}</p>}
         </div>
       </div>
+
+      {!isOwnProfile && (
+        <div className="public-profile-follow">
+          <button
+            type="button"
+            className="public-profile-follow-button"
+            onClick={toggleFollow}
+            disabled={isTogglingFollow}
+          >
+            {data.isFollowing ? 'Following ✓' : 'Follow'}
+          </button>
+          {followError && <span className="public-profile-follow-error">{followError}</span>}
+        </div>
+      )}
 
       {profile.bio && <p className="public-profile-bio">{profile.bio}</p>}
 

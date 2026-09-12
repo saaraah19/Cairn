@@ -58,7 +58,7 @@ export async function giveKudos(userId, activityId) {
   const updated = await Activity.findOneAndUpdate(
     { _id: activityId, visibility: 'public' },
     { $inc: { kudosCount: 1 } },
-    { new: true }
+    { returnDocument: 'after' }
   ).select('kudosCount')
 
   if (!updated) {
@@ -96,7 +96,7 @@ export async function removeKudos(userId, activityId) {
   const updated = await Activity.findOneAndUpdate(
     { _id: activityId, kudosCount: { $gt: 0 } },
     { $inc: { kudosCount: -1 } },
-    { new: true }
+    { returnDocument: 'after' }
   ).select('kudosCount')
 
   return { kudosCount: updated?.kudosCount ?? 0, hasKudos: false }

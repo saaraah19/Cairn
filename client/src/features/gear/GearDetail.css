@@ -2,7 +2,8 @@
   height: 200px;
   border-radius: var(--radius-lg);
   background: var(--color-bg);
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   margin-bottom: var(--space-md);
   display: flex;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getFeedRequest } from './api.js'
 import { PublicActivityCard } from './PublicActivityCard.jsx'
+import { useAuth } from '../auth/useAuth.js'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import './ExplorePage.css'
@@ -15,6 +16,8 @@ const TYPE_OPTIONS = [
 ]
 
 export function ExplorePage() {
+  const { user } = useAuth()
+  const [scope, setScope] = useState('explore')
   const [type, setType] = useState('')
   const [wilaya, setWilaya] = useState('')
   const [activities, setActivities] = useState([])
@@ -23,15 +26,15 @@ export function ExplorePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  const requestKey = JSON.stringify({ type, wilaya })
+  const requestKey = JSON.stringify({ scope, type, wilaya })
 
   // Chronological only — no ranking/recommendation logic, matching
   // docs/08_COMMUNITY_PROPOSAL.md §6's explicit rejection of algorithmic
-  // feeds. Filter changes reset the list rather than appending to it.
+  // feeds. Filter/scope changes reset the list rather than appending to it.
   useEffect(() => {
     let cancelled = false
     setIsLoading(true)
-    getFeedRequest({ scope: 'explore', type, wilaya })
+    getFeedRequest({ scope, type, wilaya })
       .then((data) => {
         if (cancelled) return
         setActivities(data.activities)
@@ -53,7 +56,7 @@ export function ExplorePage() {
   function loadMore() {
     if (!nextCursor) return
     setIsLoadingMore(true)
-    getFeedRequest({ scope: 'explore', type, wilaya, cursor: nextCursor })
+    getFeedRequest({ scope, type, wilaya, cursor: nextCursor })
       .then((data) => {
         setActivities((prev) => [...prev, ...data.activities])
         setNextCursor(data.nextCursor)
@@ -68,6 +71,29 @@ export function ExplorePage() {
         <h1>Explore</h1>
         <p>Public adventures shared by hikers across Cairn.</p>
       </div>
+
+      {user && (
+        <div className="explore-scope-tabs" role="tablist" aria-label="Feed scope">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={scope === 'explore'}
+            className={scope === 'explore' ? 'explore-scope-tab active' : 'explore-scope-tab'}
+            onClick={() => setScope('explore')}
+          >
+            Explore
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={scope === 'following'}
+            className={scope === 'following' ? 'explore-scope-tab active' : 'explore-scope-tab'}
+            onClick={() => setScope('following')}
+          >
+            Following
+          </button>
+        </div>
+      )}
 
       <div className="activities-toolbar">
         <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
@@ -90,7 +116,14 @@ export function ExplorePage() {
 
       {!isLoading && error && <EmptyState title="Couldn't load the feed" description={error} />}
 
-      {!isLoading && !error && activities.length === 0 && (
+      {!isLoading && !error && activities.length === 0 && scope === 'following' && (
+        <EmptyState
+          title="Nobody to show yet."
+          description="Follow a few hikers from their public profile to see their adventures here."
+        />
+      )}
+
+      {!isLoading && !error && activities.length === 0 && scope === 'explore' && (
         <EmptyState
           title="Nothing here yet."
           description="No public activities match these filters right now — try a different type or wilaya, or check back later."

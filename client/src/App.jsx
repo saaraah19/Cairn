@@ -14,6 +14,7 @@ import { PublicPageLayout } from './layouts/PublicPageLayout.jsx'
 import { PublicActivityDetail } from './features/community/PublicActivityDetail.jsx'
 import { PublicProfile } from './features/community/PublicProfile.jsx'
 import { ExplorePage } from './features/community/ExplorePage.jsx'
+import { NotificationsPage } from './features/notifications/NotificationsPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { MyOutdoorsPage } from './pages/MyOutdoorsPage.jsx'
 import { GearPage } from './pages/GearPage.jsx'
@@ -160,6 +161,7 @@ function AppContent() {
         <Route path="/community/activities/:id" element={<PublicActivityDetail />} />
         <Route path="/community/users/:username" element={<PublicProfile />} />
         <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
       </Route>
       <Route path="*" element={<RedirectHome />} />
     </Routes>

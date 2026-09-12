@@ -21,7 +21,7 @@ export async function getNextSequenceValue(userId, sequence) {
   const counter = await Counter.findOneAndUpdate(
     { userId, sequence },
     { $inc: { value: 1 } },
-    { new: true, upsert: true }
+    { returnDocument: 'after', upsert: true }
   )
   return counter.value
 }

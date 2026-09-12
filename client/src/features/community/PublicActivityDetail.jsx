@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getPublicActivityRequest, giveKudosRequest, removeKudosRequest } from './api.js'
+import { getPublicActivityRequest, giveKudosRequest, removeKudosRequest, reportActivityRequest } from './api.js'
 import { useAuth } from '../auth/useAuth.js'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
+import { ReportButton } from './ReportButton.jsx'
 import {
   formatDate,
   formatDuration,
@@ -168,6 +169,12 @@ export function PublicActivityDetail() {
         )}
         {kudosError && <span className="public-activity-kudos-error">{kudosError}</span>}
       </div>
+
+      {!isOwnActivity && user && (
+        <div className="public-activity-report">
+          <ReportButton onSubmit={(reason, details) => reportActivityRequest(activity.id, reason, details)} />
+        </div>
+      )}
     </div>
   )
 }

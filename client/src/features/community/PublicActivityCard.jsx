@@ -19,7 +19,18 @@ export function PublicActivityCard({ activity }) {
 
   return (
     <Link to={`/community/activities/${activity.id}`} className="activity-card">
-      <div className="activity-card-photo-placeholder">
+      <div
+        className="activity-card-photo-placeholder"
+        style={
+          activity.coverPhoto?.secureUrl
+            ? {
+                backgroundImage: `url(${activity.coverPhoto.secureUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : undefined
+        }
+      >
         {activity.trail?.elevationGainM != null && (
           <span className="activity-card-elevation">{formatElevation(activity.trail.elevationGainM)}</span>
         )}

@@ -17,7 +17,8 @@
 .gear-card-photo {
   height: 100px;
   background: var(--color-bg);
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
   display: flex;
   align-items: center;

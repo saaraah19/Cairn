@@ -15,6 +15,9 @@
 
   .sidebar-brand {
     padding: 0 var(--space-sm) var(--space-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .sidebar-list {

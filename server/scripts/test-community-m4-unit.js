@@ -103,13 +103,27 @@ async function run() {
       'Filtering by type="hiking" still never returns the private hiking activity'
     )
 
-    let rejectedFollowing = false
+    // NOTE: scope="following" was a hard 422 reject when M4 first shipped
+    // (Follow didn't exist yet). M8 implements it for real — this
+    // assertion is intentionally updated to match: an unauthenticated
+    // request for scope="following" now fails with 401 (real auth
+    // required), not 422. A genuinely unknown scope value still gets 422.
+    // See test-community-m8-unit.js for full scope="following" coverage.
+    let rejectedFollowingNoViewer = false
     try {
       await listPublicFeed({ scope: 'following' })
     } catch (err) {
-      rejectedFollowing = err.status === 422
+      rejectedFollowingNoViewer = err.status === 401
     }
-    assert(rejectedFollowing, 'scope="following" is explicitly rejected (422), not silently treated as Explore')
+    assert(rejectedFollowingNoViewer, 'scope="following" with no authenticated viewer is rejected with 401 (not silently treated as Explore)')
+
+    let rejectedUnknownScope = false
+    try {
+      await listPublicFeed({ scope: 'trending' })
+    } catch (err) {
+      rejectedUnknownScope = err.status === 422
+    }
+    assert(rejectedUnknownScope, 'A genuinely unknown scope value is rejected with 422')
   } finally {
     Activity.find = originalFind
   }

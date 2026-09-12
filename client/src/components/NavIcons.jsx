@@ -63,3 +63,12 @@ export function ExploreIcon(props) {
     </svg>
   )
 }
+
+export function BellIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" {...common} {...props}>
+      <path d="M6 10.5a6 6 0 0 1 12 0v3.5l1.5 3h-15l1.5-3v-3.5Z" />
+      <path d="M10 19.5a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}

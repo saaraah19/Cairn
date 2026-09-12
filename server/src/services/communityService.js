@@ -5,6 +5,8 @@ import { Destination } from '../models/Destination.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { getPublicStatistics } from './communityStatisticsService.js'
 import { hasUserGivenKudos } from './kudosService.js'
+import { isFollowing } from './followService.js'
+import { Follow } from '../models/Follow.js'
 
 // Whitelist-only public DTO builders — see docs/08_COMMUNITY_PROPOSAL.md §2
 // (Activity field matrix) and §3 (Profile field matrix). Every field below
@@ -181,20 +183,38 @@ export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } 
 // (activityService.listActivities), for a consistent filtering feel
 // between "my activities" and "Explore".
 //
-// `scope: 'following'` is intentionally not handled here yet — that
-// requires the Follow model, which doesn't exist until M8. Passing it
-// today throws a clear validation error rather than silently falling back
-// to Explore, which would be a confusing, easy-to-miss product behavior.
-export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, limit = 12 } = {}) {
-  if (scope !== 'explore') {
-    throw new ApiError(422, 'VALIDATION_ERROR', `Feed scope "${scope}" is not available yet.`)
-  }
-
+// `scope: 'following'` requires a real authenticated viewer — "my
+// following feed" has no meaning for an anonymous request, so this
+// rejects with 401 rather than silently falling back to Explore (the
+// same "don't silently redefine the request" instinct M4 already applied
+// when scope=following didn't exist yet). Once the viewer is known, this
+// resolves followerId -> followingId list via Follow's unique-index
+// prefix, then reuses the exact same paginatePublicActivities core as
+// Explore, with { userId: { $in: followingIds } } added — no new
+// infrastructure, per docs/08_COMMUNITY_PROPOSAL.md §9. Per the resolved
+// edge case in §6, this never additionally checks the followed user's
+// current isPublicProfile — Activity.visibility is the only content-
+// visibility gate, exactly as Explore already treats everyone.
+export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, limit = 12, viewerUserId } = {}) {
   const filter = {}
   if (type) filter.type = type
   if (wilaya) filter['location.wilaya'] = new RegExp(wilaya, 'i')
 
-  return paginatePublicActivities(filter, { cursor, limit })
+  if (scope === 'explore') {
+    return paginatePublicActivities(filter, { cursor, limit })
+  }
+
+  if (scope === 'following') {
+    if (!viewerUserId) {
+      throw new ApiError(401, 'UNAUTHENTICATED', 'You must be logged in to view your following feed.')
+    }
+    const follows = await Follow.find({ followerId: viewerUserId }).select('followingId').lean()
+    const followingIds = follows.map((f) => f.followingId)
+    filter.userId = { $in: followingIds }
+    return paginatePublicActivities(filter, { cursor, limit })
+  }
+
+  throw new ApiError(422, 'VALIDATION_ERROR', `Feed scope "${scope}" is not available yet.`)
 }
 
 // Looks up a single profile for public display. Same non-distinguishing
@@ -202,15 +222,16 @@ export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, 
 // produces the identical response as a nonexistent username. Statistics
 // come from the dedicated communityStatisticsService, never
 // statisticsService — see docs/08_COMMUNITY_PROPOSAL.md §3.
-export async function getPublicProfileByUsername(username, { activitiesCursor } = {}) {
+export async function getPublicProfileByUsername(username, { activitiesCursor, viewerUserId } = {}) {
   const user = await User.findOne({ username, isPublicProfile: true })
   if (!user) {
     throw new ApiError(404, 'NOT_FOUND', 'Profile not found.')
   }
 
-  const [statistics, activityPage] = await Promise.all([
+  const [statistics, activityPage, viewerIsFollowing] = await Promise.all([
     getPublicStatistics(user._id),
     listPublicActivitiesByUser(user._id, { cursor: activitiesCursor, limit: 12 }),
+    isFollowing(viewerUserId, user._id),
   ])
 
   return {
@@ -218,5 +239,6 @@ export async function getPublicProfileByUsername(username, { activitiesCursor } 
     statistics,
     activities: activityPage.activities,
     nextCursor: activityPage.nextCursor,
+    isFollowing: viewerIsFollowing,
   }
 }

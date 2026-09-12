@@ -15,6 +15,7 @@ import statisticsRoutes from './routes/statistics.routes.js'
 import profileRoutes from './routes/profile.routes.js'
 import dataRoutes from './routes/data.routes.js'
 import communityRoutes from './routes/community.routes.js'
+import notificationRoutes from './routes/notification.routes.js'
 import { notFound } from './middleware/notFound.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/profile', profileRoutes)
   app.use('/api/profile', dataRoutes)
   app.use('/api/community', communityRoutes)
+  app.use('/api/notifications', notificationRoutes)
 
   app.use(notFound)
   app.use(errorHandler)

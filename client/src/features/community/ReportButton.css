@@ -1,0 +1,74 @@
+.report-button-trigger {
+  background: none;
+  border: none;
+  color: var(--color-mist);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.report-button-trigger:hover {
+  color: var(--color-clay);
+}
+
+.report-button-done {
+  color: var(--color-mist);
+  font-size: 0.78rem;
+}
+
+.report-button-form {
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 320px;
+}
+
+.report-button-form select {
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--color-surface);
+}
+
+.report-button-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  font-family: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.report-button-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.report-button-actions button {
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-sm);
+  border: var(--border-hairline);
+  background: var(--color-surface);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.report-button-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.report-button-cancel {
+  color: var(--color-mist);
+}
+
+.report-button-error {
+  color: var(--color-clay);
+  font-size: 0.78rem;
+  margin: 0;
+}

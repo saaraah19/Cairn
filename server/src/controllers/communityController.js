@@ -13,7 +13,10 @@ export async function getActivity(req, res, next) {
 export async function getProfile(req, res, next) {
   try {
     const { cursor } = req.query
-    const result = await getPublicProfileByUsername(req.params.username, { activitiesCursor: cursor })
+    const result = await getPublicProfileByUsername(req.params.username, {
+      activitiesCursor: cursor,
+      viewerUserId: req.userId,
+    })
     success(res, result)
   } catch (err) {
     next(err)
@@ -23,7 +26,7 @@ export async function getProfile(req, res, next) {
 export async function getFeed(req, res, next) {
   try {
     const { scope, type, wilaya, cursor } = req.query
-    const result = await listPublicFeed({ scope, type, wilaya, cursor })
+    const result = await listPublicFeed({ scope, type, wilaya, cursor, viewerUserId: req.userId })
     success(res, result)
   } catch (err) {
     next(err)

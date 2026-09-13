@@ -1,6 +1,6 @@
-# CAIRN — POST-V1 HANDOVER
+# CAIRN — POST-V1 / COMMUNITY HANDOVER
 
-Produced at the V1 completion checkpoint, 2026-09-05. This document is meant to let a completely fresh Claude conversation continue Cairn's development without access to the conversation that built it.
+Originally produced at the V1 completion checkpoint, 2026-09-05, and updated in place as Community milestones landed since. Last updated 2026-09-13, after M10 (Comment Likes & Replies) plus a round of bug fixes and two mid-stream product-decision revisions. This document is meant to let a completely fresh Claude conversation continue Cairn's development without access to the conversation that built it.
 
 ---
 
@@ -18,7 +18,20 @@ The product owner (a human, not Claude) makes all product-direction decisions. C
 
 ## 2. Current State
 
-**V1 is complete and deployed.** All twelve roadmap phases are implemented. The app is live on Render (separate frontend Static Site + backend Web Service) and the product owner has confirmed basic functionality works in production. See `docs/PROGRESS.md` for the precise, honestly-caveated verification state — not everything is confirmed to the same degree, and that document says exactly what is and isn't.
+**V1 is complete and deployed.** All twelve roadmap phases are implemented. The app is live on Render (separate frontend Static Site + backend Web Service) and the product owner has confirmed basic functionality works in production.
+
+**Community is under active implementation on top of V1**, per `docs/08_COMMUNITY_PROPOSAL.md`. Milestones M0–M11 are implemented (Landing Page, Foundation, Public Activity View, Public Profiles, Explore Feed, Kudos, Comments, Reporting, Following, Notifications Inbox, Comment Likes & Replies, Cross-Feature Security Audit). **The product owner has confirmed M0–M10 all work end-to-end against a real dev server (2026-09-13)** — the earlier "no live DB in this environment" caveat for those milestones no longer applies. M11's own consolidated live script (`test-community-flow.sh`) has NOT yet been run, however — see §11. Two explicit, deliberate revisions to the original Community design have been made along the way by the product owner:
+1. **Comments now support one level of replies and likes** (M10) — the original "deliberately flat, no threading" stance in §5 was revised so a question on a comment can get an answer.
+2. **Public profile statistics now show OVERALL totals (public + private activities), not public-only** — a deliberate privacy-behavior change from §3's original design. Implemented carefully: totals are overall, but *records* (which specific activity was longest/highest/etc.) stay scoped to public activities only, since a record names and links to a specific activity and letting it point at a private one would leak that activity's existence. See `communityStatisticsService.js` and `docs/PROGRESS.md`'s "Session Fixes & Product Decisions (2026-09-13)" section for full detail.
+
+**A numbering note**: `docs/08_COMMUNITY_PROPOSAL.md` §13 calls the security-audit milestone "M10" and Polish "M11" — but this project's actual sequence inserted Comment Likes & Replies as its own M10 mid-stream (a decision not in the original document), so this project tracks the security audit as **M11** and Polish as **M12**. `docs/PROGRESS.md`'s milestone table is authoritative on this.
+
+**Bugs fixed this session, all predating the M7-M10 work**: `CommentSection` had never actually been rendered anywhere since M6 shipped (comments never appeared on any activity page); the public activity DTO never resolved any photo data (Explore/detail images never showed); Explore cards and the activity detail page never showed the author's name, meaning there was no way to discover a public profile or its Follow button from anywhere in the app.
+
+**Also closed this session (M11)**: rate limiting, a "Must Fix" gap named in `07_POST_V1_ROADMAP.md` and never actually implemented, did not exist ANYWHERE in the codebase before now — closed via `server/src/middleware/rateLimit.js`, applied to auth endpoints and every Community write route. `app.set('trust proxy', 1)` was also entirely missing, which would have made IP-based rate limiting meaningless in production behind Render's reverse proxy.
+
+See `docs/PROGRESS.md` for the precise, honestly-caveated verification state, milestone by milestone.
+
 
 ## 3. V1 Completion
 
@@ -152,18 +165,19 @@ Full detail in `docs/07_POST_V1_ROADMAP.md`. Summary:
 
 ## 11. Current Recommended Next Step
 
-Claude's recommendation (**not a decision** — the product owner has not approved a next milestone): implement **A1 (rate limiting)** first, since it's small, was a named V1 requirement that got missed, and carries no product-direction weight either way. After that, it's a genuine choice between hardening what's live (A2 → B1 → B2) or improving daily-use experience (C1, the Home dashboard). **Nothing in category D is currently justified by any product signal — do not start there.**
+**Superseded by the approved, now-substantially-complete Community effort.** The A1-D prioritization above was the recommendation at the V1-only checkpoint and is preserved for historical reference, but is not the live plan.
 
-**The product owner has not yet approved any of this.** Do not implement anything from this list until they explicitly say to.
+**Current next step**: run `bash server/scripts/test-community-flow.sh` (M11's own consolidated audit script) against a real dev server — this is the one remaining unverified piece of M11 itself. After that, **M12 — Polish** (visual/UX pass against `03_UX_DESIGN_SPEC.md`, empty states, mobile responsiveness across feed/detail/profile/comments/notifications/reporting) is the next actual milestone. Read `docs/PROGRESS.md`'s milestone table and "Session Fixes & Product Decisions" section before proposing anything, and confirm the plan with the product owner first, same as every prior milestone.
 
 ## 12. Important Deferred Features — Do Not Implement Without Explicit Approval
 
-- Community, public activity feeds, following, kudos, comments
+- ~~Community, public activity feeds, kudos, comments, reporting, following, notifications, comment likes/replies~~ — **approved and now implemented (M0–M10)**, see §2.
 - Maps, GPX import/export, route recording, trail discovery
 - Native mobile application
 - Offline mode
 - AI features of any kind (insights, recommendations, packing assistance) — `01_PRODUCT_SPEC.md` §34 and `Claude.md` §9 both explicitly prohibit adding AI "merely because it's available"; a genuine identified user problem is required first, and none currently exists
 - Group accounts / multi-user group management (distinct from the existing lightweight personal `Group` tag, which stays as-is)
+- Followers/following counts or lists (the `Follow` model deliberately has only one index; a `{followingId, createdAt}` index for this would need to be added first)
 
 If the product owner asks about any of these, discuss them — don't refuse to talk about the future vision — but do not start building without an explicit go-ahead.
 
@@ -199,20 +213,21 @@ Everything below this line is meant to be copied as a single message into a fres
 
 **PASTE STARTING HERE:**
 
-I'm continuing development of Cairn, a personal-first outdoor activity platform (MERN stack). This is not a new project — V1 is complete and already deployed to Render.
+I'm continuing development of Cairn, a personal-first outdoor activity platform (MERN stack). This is not a new project — V1 is complete and deployed to Render, and Community (a lightweight social layer on top of V1) is substantially built out on top of it, milestone by milestone, per `docs/08_COMMUNITY_PROPOSAL.md`.
 
 Attached/available to you is the full repository, including:
 - `docs/01` through `06` — product spec, architecture, UX spec, roadmap, data model, future vision
-- `docs/PROGRESS.md` — the living implementation-state record, updated honestly (it distinguishes verified from unconfirmed work — read it carefully, don't assume everything marked "implemented" was also confirmed working)
-- `docs/07_POST_V1_ROADMAP.md` — a categorized post-V1 analysis (Must Fix / Should Improve / V1.1 improvements / Major Future Features) produced at the V1 completion checkpoint
-- `docs/HANDOVER.md` — a detailed handover document from the previous Claude session, covering project identity, current state, architecture, data model, security rules, known issues, and the post-V1 assessment in full
+- `docs/07_POST_V1_ROADMAP.md` — categorized post-V1 analysis, produced at the V1 completion checkpoint (superseded by the now-approved and mostly-complete Community work — see `docs/HANDOVER.md` §11)
+- `docs/08_COMMUNITY_PROPOSAL.md` — the finalized Community architecture and milestone plan
+- `docs/PROGRESS.md` — the living implementation-state record, updated honestly after every milestone. Its "Community Milestone Progress" table and "Session Fixes & Product Decisions (2026-09-13)" section are the authoritative record of what's actually done, including two deliberate mid-stream revisions to the original Community design (comment replies/likes, and overall — not public-only — profile statistics)
+- `docs/HANDOVER.md` — this handover
 
 Before doing anything else:
-1. Read all the documentation listed above, especially `docs/PROGRESS.md` and `docs/HANDOVER.md`
-2. Inspect the actual repository and compare it against what the documentation claims
-3. Confirm to me, briefly, that your understanding of the current state matches reality (the repository is the final authority if anything seems inconsistent)
+1. Read all the documentation listed above, especially `docs/PROGRESS.md` in full and this handover
+2. Inspect the actual repository and compare it against what the documentation claims — the repository is the final authority if anything seems inconsistent
+3. Confirm to me, briefly, that your understanding of the current state matches reality: Community milestones M0–M10 are implemented and mocked-unit-tested (165+ checks passing); none of the ten live `.sh` integration scripts have ever been run against a real database; M11 (Polish) has not been started
 
-**Do not start implementing anything yet.** I am the product owner and have not yet decided on the next milestone. `docs/HANDOVER.md` §11 contains a recommendation from the previous session (rate limiting on auth endpoints, as a small urgent fix), but that is a recommendation, not an approved plan — wait for me to decide before writing any code.
+**Do not start implementing anything yet.** I am the product owner. Confirm the plan with me before writing any code, same as every prior milestone.
 
 Once you've confirmed the current state, ask me what I'd like to work on next.
 

@@ -22,6 +22,14 @@ import { errorHandler } from './middleware/errorHandler.js'
 export function createApp() {
   const app = express()
 
+  // Render (and most PaaS platforms) sit the app behind a reverse proxy.
+  // Without this, every request appears to originate from the proxy's
+  // single IP, which would make IP-keyed rate limiting (authRateLimiter)
+  // completely ineffective in production — everyone would share one
+  // bucket. `1` trusts exactly one hop (the platform's own proxy), not an
+  // arbitrary chain of forwarded-for headers an attacker could spoof.
+  app.set('trust proxy', 1)
+
   // origin as a function (rather than a plain string) lets us support a
   // comma-separated CLIENT_URL list — e.g. Render's default *.onrender.com
   // URL plus a custom domain added later — without needing '*' (which

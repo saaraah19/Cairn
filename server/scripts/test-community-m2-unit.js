@@ -16,6 +16,7 @@
 
 import { Activity } from '../src/models/Activity.js'
 import { Photo } from '../src/models/Photo.js'
+import { User } from '../src/models/User.js'
 import { getPublicActivityById } from '../src/services/communityService.js'
 
 let failures = 0
@@ -66,6 +67,12 @@ async function run() {
     // photo data specifically.
     return { populate: () => ({ then: (resolve) => resolve(found) }), then: (resolve) => resolve(found) }
   }
+
+  // resolvePublicAuthor queries User directly — stub it to a simple
+  // opted-in author so this test stays about the Activity whitelist.
+  User.findById = () => ({
+    select: () => ({ lean: () => Promise.resolve({ name: 'Test Author', username: 'testauthor', isPublicProfile: true }) }),
+  })
 
   // resolvePublicPhotos queries Photo directly — stub it to an empty
   // gallery so this test stays about the Activity whitelist, not photos.

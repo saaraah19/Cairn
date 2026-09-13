@@ -53,6 +53,18 @@ function installMocks() {
     return { select: () => Promise.resolve(found ? { ...found } : null) }
   }
 
+  // resolvePublicAuthor (communityService.js) — used by every activity
+  // the following-feed integration test (#10/#11 below) resolves through
+  // toPublicActivityDTO.
+  User.findById = (id) => ({
+    select: () => ({
+      lean: () => {
+        const found = users.find((u) => u._id === id)
+        return Promise.resolve(found ? { ...found } : null)
+      },
+    }),
+  })
+
   Follow.create = async (doc) => {
     const isDuplicate = follows.some((f) => f.followerId === doc.followerId && f.followingId === doc.followingId)
     if (isDuplicate) {
@@ -113,14 +125,23 @@ function installActivityFindMock() {
   Activity.find = (filter) => {
     const matched = activityFixture.filter((doc) => applyFilter(doc, filter))
     const sorted = [...matched].sort((a, b) => b.date - a.date)
-    return {
+    const chain = {
+      _limit: undefined,
       sort() {
         return this
       },
       limit(n) {
-        return Promise.resolve(sorted.slice(0, n))
+        this._limit = n
+        return this
+      },
+      populate() {
+        return this
+      },
+      then(resolve) {
+        resolve(this._limit ? sorted.slice(0, this._limit) : sorted)
       },
     }
+    return chain
   }
 }
 

@@ -30,10 +30,10 @@ export function getCommentsRequest(activityId, { cursor } = {}) {
   return apiRequest(`/api/community/activities/${activityId}/comments${qs}`)
 }
 
-export function postCommentRequest(activityId, text) {
+export function postCommentRequest(activityId, text, parentCommentId = null) {
   return apiRequest(`/api/community/activities/${activityId}/comments`, {
     method: 'POST',
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(parentCommentId ? { text, parentCommentId } : { text }),
   })
 }
 
@@ -46,6 +46,14 @@ export function updateCommentRequest(commentId, text) {
 
 export function deleteCommentRequest(commentId) {
   return apiRequest(`/api/community/comments/${commentId}`, { method: 'DELETE' })
+}
+
+export function likeCommentRequest(commentId) {
+  return apiRequest(`/api/community/comments/${commentId}/like`, { method: 'POST' })
+}
+
+export function unlikeCommentRequest(commentId) {
+  return apiRequest(`/api/community/comments/${commentId}/like`, { method: 'DELETE' })
 }
 
 export function reportActivityRequest(activityId, reason, details) {

@@ -2,6 +2,7 @@ import { Comment } from '../models/Comment.js'
 import { Activity } from '../models/Activity.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { create as createNotification } from './notifyService.js'
+import { hasUserLikedComment } from './commentLikeService.js'
 
 // Re-verifies the activity's CURRENT public status — never trusted from an
 // earlier read. Both listing and creating a comment go through this, so a
@@ -15,10 +16,11 @@ async function assertActivityIsPublic(activityId) {
   return activity
 }
 
-function toCommentDTO(comment) {
+async function toCommentDTO(comment, viewerUserId) {
   return {
     id: comment._id,
     activityId: comment.activityId,
+    parentCommentId: comment.parentCommentId,
     authorId: comment.userId?._id ?? comment.userId,
     // Populated when available — comments are inherently public-facing
     // once posted (unlike a feed card's author, which may have no public
@@ -31,15 +33,31 @@ function toCommentDTO(comment) {
     text: comment.text,
     editedAt: comment.editedAt,
     createdAt: comment.createdAt,
+    likesCount: comment.likesCount ?? 0,
+    hasLiked: await hasUserLikedComment(viewerUserId, comment._id),
   }
+}
+
+// Fetches a top-level comment's replies. Eager, not separately paginated —
+// deliberately: replies are capped at one level (a reply can never itself
+// be replied to, enforced in createComment below), so a single thread's
+// reply count stays naturally bounded by ordinary conversation size,
+// unlike top-level comments on a popular activity. Introducing cursor
+// pagination here would be complexity this shape doesn't need yet.
+async function listReplies(parentCommentId, viewerUserId) {
+  const rows = await Comment.find({ parentCommentId }).sort({ createdAt: 1 }).populate('userId', 'name username')
+  return Promise.all(rows.map((r) => toCommentDTO(r, viewerUserId)))
 }
 
 // Cursor pagination, ascending (oldest first — a comment thread reads top
 // to bottom like a conversation, unlike the feed's newest-first order).
-export async function listComments(activityId, { cursor, limit = 20 } = {}) {
+// Only paginates TOP-LEVEL comments (parentCommentId: null); each one's
+// replies are attached eagerly via listReplies, per that function's own
+// comment on why that's an acceptable simplicity trade-off here.
+export async function listComments(activityId, { cursor, limit = 20, viewerUserId } = {}) {
   await assertActivityIsPublic(activityId)
 
-  const filter = { activityId }
+  const filter = { activityId, parentCommentId: null }
   if (cursor) {
     const [createdAtIso, lastId] = cursor.split('_')
     filter.$or = [
@@ -58,24 +76,60 @@ export async function listComments(activityId, { cursor, limit = 20 } = {}) {
   const last = page[page.length - 1]
   const nextCursor = hasMore && last ? `${last.createdAt.toISOString()}_${last._id}` : null
 
-  return { comments: page.map(toCommentDTO), nextCursor }
+  const comments = await Promise.all(
+    page.map(async (comment) => {
+      const dto = await toCommentDTO(comment, viewerUserId)
+      dto.replies = await listReplies(comment._id, viewerUserId)
+      return dto
+    })
+  )
+
+  return { comments, nextCursor }
 }
 
-export async function createComment(userId, activityId, text) {
+// `parentCommentId` is optional — omitted (or null) for a top-level
+// comment. When present, per docs/08_COMMUNITY_PROPOSAL.md §5's 2026-09-13
+// revision (one level of replies, to let "wow, where is this?" get an
+// answer): the parent must exist, belong to the SAME activity (a client
+// can't reply into a different activity's thread by guessing an id from
+// elsewhere), and must itself be a top-level comment — replying to a
+// reply is rejected outright, keeping threading capped at one level.
+export async function createComment(userId, activityId, text, parentCommentId = null) {
   const activity = await assertActivityIsPublic(activityId)
 
-  const comment = await Comment.create({ activityId, userId, text })
+  let notifyRecipientId = activity.userId
+  let notificationType = 'comment'
+
+  if (parentCommentId) {
+    const parent = await Comment.findById(parentCommentId).select('activityId parentCommentId userId')
+    if (!parent || String(parent.activityId) !== String(activityId)) {
+      throw new ApiError(404, 'NOT_FOUND', 'Comment not found.')
+    }
+    if (parent.parentCommentId) {
+      throw new ApiError(422, 'VALIDATION_ERROR', 'You can only reply to a top-level comment, not to another reply.')
+    }
+    // A reply notifies the person who asked, not the activity owner again
+    // (who was already notified when the top-level comment was first
+    // posted) — see createNotification's own self-notification suppression
+    // for what happens when the parent's author IS the activity owner.
+    notifyRecipientId = parent.userId
+    notificationType = 'reply'
+  }
+
+  const comment = await Comment.create({ activityId, userId, text, parentCommentId })
   await comment.populate('userId', 'name username')
 
   await createNotification({
-    recipientUserId: activity.userId,
+    recipientUserId: notifyRecipientId,
     actorUserId: userId,
-    type: 'comment',
+    type: notificationType,
     activityId,
     commentId: comment._id,
   })
 
-  return toCommentDTO(comment)
+  const dto = await toCommentDTO(comment, userId)
+  dto.replies = []
+  return dto
 }
 
 export async function updateComment(userId, commentId, text) {
@@ -97,7 +151,7 @@ export async function updateComment(userId, commentId, text) {
   comment.editedAt = new Date()
   await comment.save()
   await comment.populate('userId', 'name username')
-  return toCommentDTO(comment)
+  return toCommentDTO(comment, userId)
 }
 
 // Named to match docs/08_COMMUNITY_PROPOSAL.md §5's documented helper
@@ -120,6 +174,12 @@ export async function deleteComment(userId, commentId) {
 
   const activity = await Activity.findById(comment.activityId).select('userId')
   assertCanDeleteComment(userId, comment, activity)
+
+  // Deleting a top-level comment also deletes its replies — an orphaned
+  // reply pointing at a deleted parent has no coherent place to render.
+  // (A reply itself has no children, by construction, so this is a single
+  // extra step, not a recursive cascade.)
+  await Comment.deleteMany({ parentCommentId: commentId })
 
   // Hard delete, consistent with 05_DATA_MODEL_AND_API_CONTRACT.md §59's
   // existing default — no soft-delete requirement exists for comments.

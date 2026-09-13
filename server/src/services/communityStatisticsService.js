@@ -2,31 +2,46 @@ import { Activity } from '../models/Activity.js'
 
 const DIFFICULTY_RANK = { easy: 1, moderate: 2, hard: 3, very_hard: 4 }
 
-// Deliberately NOT a reuse of statisticsService.getStatistics, and
-// deliberately not "call it then filter its output" — that would still
-// require fetching the user's real (including private) activities into
-// memory first. This queries with { userId, visibility: 'public' } as part
-// of the filter itself, so a private activity is never even read off disk
-// for this computation, let alone included in a total.
-//
-// Also intentionally a smaller field set than the private statistics page:
-// no gearValueDzd (gear is never public, see docs/08_COMMUNITY_PROPOSAL.md
-// §2), no byWilaya/byYear/byDifficulty breakdowns (not required for this
-// milestone's definition of done — can be added later without disturbing
-// this shape). Record references use only { id, name } — never
-// activityNumber, which is never public (see the same §2 field matrix).
+// Two different privacy postures in one function, deliberately:
+//   - `totals` are computed from the user's ENTIRE activity history
+//     (public + private) — a 2026-09-13 product decision: a profile's
+//     headline numbers ("47 activities, 620 km") shouldn't understate
+//     someone's real outdoor life just because most of it is private.
+//     Only raw trail numbers are selected for this set — never name,
+//     date, location, or review — so no private activity's identity or
+//     content is ever loaded for this computation, only its numbers.
+//   - `records` (which activity was the longest/highest/hardest/
+//     highest-rated) stay scoped to PUBLIC activities only, unchanged
+//     from the original design. A record links to a specific activity
+//     page (`{ id, name }`) — if it were allowed to point at a private
+//     activity, the profile would leak that activity's name and
+//     existence to every visitor, which is a much sharper leak than a
+//     bigger aggregate number and violates the hard "never expose a
+//     private activity" invariant. If a user's real longest hike is
+//     private, the public record simply reflects their longest *public*
+//     one instead — never nothing, but never the private one either.
 export async function getPublicStatistics(userId) {
-  const activities = await Activity.find({ userId, visibility: 'public' }).select(
-    'name date type trail review'
-  )
+  const [allActivities, publicActivities] = await Promise.all([
+    Activity.find({ userId }).select('trail'),
+    Activity.find({ userId, visibility: 'public' }).select('name date type trail review'),
+  ])
 
   const totals = {
-    activities: activities.length,
+    activities: allActivities.length,
     distanceKm: 0,
     durationMinutes: 0,
     elevationGainM: 0,
     elevationLossM: 0,
   }
+
+  for (const a of allActivities) {
+    const trail = a.trail ?? {}
+    totals.distanceKm += trail.distanceKm ?? 0
+    totals.durationMinutes += trail.durationMinutes ?? 0
+    totals.elevationGainM += trail.elevationGainM ?? 0
+    totals.elevationLossM += trail.elevationLossM ?? 0
+  }
+  totals.distanceKm = Math.round(totals.distanceKm * 10) / 10
 
   const records = {
     highestAltitudeM: null,
@@ -41,14 +56,9 @@ export async function getPublicStatistics(userId) {
 
   const publicRef = (a) => ({ id: a._id, name: a.name })
 
-  for (const a of activities) {
+  for (const a of publicActivities) {
     const trail = a.trail ?? {}
     const review = a.review ?? {}
-
-    totals.distanceKm += trail.distanceKm ?? 0
-    totals.durationMinutes += trail.durationMinutes ?? 0
-    totals.elevationGainM += trail.elevationGainM ?? 0
-    totals.elevationLossM += trail.elevationLossM ?? 0
 
     if (trail.maxAltitudeM != null && (records.highestAltitudeM == null || trail.maxAltitudeM > records.highestAltitudeM)) {
       records.highestAltitudeM = trail.maxAltitudeM
@@ -71,8 +81,6 @@ export async function getPublicStatistics(userId) {
       records.highestRatedActivity = publicRef(a)
     }
   }
-
-  totals.distanceKm = Math.round(totals.distanceKm * 10) / 10
 
   return { totals, records }
 }

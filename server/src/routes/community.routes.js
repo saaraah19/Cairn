@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { getActivity, getProfile, getFeed } from '../controllers/communityController.js'
 import { postKudos, deleteKudos } from '../controllers/kudosController.js'
-import { getComments, postComment, patchComment, removeComment } from '../controllers/commentController.js'
+import { getComments, postComment, patchComment, removeComment, postCommentLike, deleteCommentLike } from '../controllers/commentController.js'
 import { reportActivity, reportComment } from '../controllers/reportController.js'
 import { postFollow, deleteFollow } from '../controllers/followController.js'
 import { optionalAuthenticate } from '../middleware/optionalAuthenticate.js'
@@ -34,11 +34,21 @@ router.delete('/activities/:id/kudos', authenticate, deleteKudos)
 
 // Comments — listing is readable by anyone (matches the router's default
 // optionalAuthenticate), same as the activity itself; writing/editing/
-// deleting require real authentication.
+// deleting require real authentication. `postComment` also handles
+// replies (an optional parentCommentId in the body, capped at one level
+// deep — enforced in commentService, not here) — a reply is not a
+// separate route/resource, just a Comment with a parent reference.
 router.get('/activities/:id/comments', validateQuery(listCommentsQuerySchema), getComments)
 router.post('/activities/:id/comments', authenticate, validateBody(createCommentSchema), postComment)
 router.patch('/comments/:commentId', authenticate, validateBody(createCommentSchema), patchComment)
 router.delete('/comments/:commentId', authenticate, removeComment)
+
+// Comment likes — a write, same authentication requirement as everything
+// else on this router. Applies equally to top-level comments and replies
+// (both are just Comment documents); commentLikeService re-verifies the
+// comment's parent activity is still public, same pattern as reports.
+router.post('/comments/:commentId/like', authenticate, postCommentLike)
+router.delete('/comments/:commentId/like', authenticate, deleteCommentLike)
 
 // Reporting — a write, same as kudos/comments: requires real
 // authentication. targetType is implied by the route hit, never trusted

@@ -9,6 +9,7 @@
 // Usage: node scripts/test-community-m4-unit.js
 
 import { Activity } from '../src/models/Activity.js'
+import { User } from '../src/models/User.js'
 import { listPublicFeed } from '../src/services/communityService.js'
 
 let failures = 0
@@ -25,11 +26,11 @@ function assert(condition, message) {
 // A small in-memory fixture "collection" so the stub can honestly apply
 // filter/sort/limit semantics rather than hand-coding expected results.
 const fixture = [
-  { _id: 'a5', name: 'Public Oran Hike', type: 'hiking', location: { wilaya: 'Oran' }, visibility: 'public', date: new Date('2026-05-05') },
-  { _id: 'a4', name: 'Private Oran Hike', type: 'hiking', location: { wilaya: 'Oran' }, visibility: 'private', date: new Date('2026-05-04') },
-  { _id: 'a3', name: 'Public Blida Trek', type: 'trekking', location: { wilaya: 'Blida' }, visibility: 'public', date: new Date('2026-05-03') },
-  { _id: 'a2', name: 'Public Oran Camp', type: 'camping', location: { wilaya: 'Oran' }, visibility: 'public', date: new Date('2026-05-02') },
-  { _id: 'a1', name: 'Public Old Hike', type: 'hiking', location: { wilaya: 'Oran' }, visibility: 'public', date: new Date('2026-05-01') },
+  { _id: 'a5', userId: 'u5', name: 'Public Oran Hike', type: 'hiking', location: { wilaya: 'Oran' }, visibility: 'public', date: new Date('2026-05-05') },
+  { _id: 'a4', userId: 'u4', name: 'Private Oran Hike', type: 'hiking', location: { wilaya: 'Oran' }, visibility: 'private', date: new Date('2026-05-04') },
+  { _id: 'a3', userId: 'u3', name: 'Public Blida Trek', type: 'trekking', location: { wilaya: 'Blida' }, visibility: 'public', date: new Date('2026-05-03') },
+  { _id: 'a2', userId: 'u2', name: 'Public Oran Camp', type: 'camping', location: { wilaya: 'Oran' }, visibility: 'public', date: new Date('2026-05-02') },
+  { _id: 'a1', userId: 'u1', name: 'Public Old Hike', type: 'hiking', location: { wilaya: 'Oran' }, visibility: 'public', date: new Date('2026-05-01') },
 ]
 
 function applyFilter(doc, filter) {
@@ -67,12 +68,22 @@ Activity.find = (filter) => {
       this._limit = n
       return this
     },
+    populate() {
+      return this
+    },
     then(resolve) {
       resolve(this._limit ? sorted.slice(0, this._limit) : sorted)
     },
   }
   return chain
 }
+
+// resolvePublicAuthor queries User directly — stub it to a simple
+// opted-in author so this test stays focused on feed filtering/pagination,
+// not the author-resolution behavior (which M8's test covers directly).
+User.findById = () => ({
+  select: () => ({ lean: () => Promise.resolve({ name: 'Fixture Author', username: 'fixtureauthor', isPublicProfile: true }) }),
+})
 
 async function run() {
   console.log('=== M4 — Explore Feed: mocked unit verification ===\n')

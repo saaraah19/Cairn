@@ -1,0 +1,21 @@
+.activity-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.activity-card-author {
+  display: block;
+  padding: 0 var(--space-md) var(--space-sm);
+  font-size: 0.8rem;
+  color: var(--color-moss-deep);
+  text-decoration: none;
+}
+
+.activity-card-author:hover {
+  text-decoration: underline;
+}
+
+.activity-card-author.unlinked {
+  color: var(--color-mist);
+}

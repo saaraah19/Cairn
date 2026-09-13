@@ -21,12 +21,12 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['kudos', 'comment', 'follow'],
+      enum: ['kudos', 'comment', 'follow', 'comment_like', 'reply'],
       required: true,
     },
-    // Present for 'kudos' and 'comment', null for 'follow'.
+    // Present for 'kudos', 'comment', 'comment_like', and 'reply'; null for 'follow'.
     activityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Activity', default: null },
-    // Present only for 'comment', null otherwise.
+    // Present for 'comment', 'comment_like', and 'reply'; null otherwise.
     commentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment', default: null },
     isRead: { type: Boolean, default: false },
   },

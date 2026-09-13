@@ -5,6 +5,7 @@ import {
   markNotificationReadRequest,
   markAllNotificationsReadRequest,
 } from './api.js'
+import { useNotificationsContext } from './NotificationsContext.jsx'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import { formatDate } from '../activities/formatters.js'
@@ -44,6 +45,34 @@ function describeNotification(notification) {
     )
   }
 
+  if (notification.type === 'reply') {
+    return (
+      <>
+        <strong>{actorName}</strong> replied to your comment
+        {activityName ? (
+          <>
+            {' '}
+            on <strong>{activityName}</strong>
+          </>
+        ) : null}
+      </>
+    )
+  }
+
+  if (notification.type === 'comment_like') {
+    return (
+      <>
+        <strong>{actorName}</strong> liked your comment
+        {activityName ? (
+          <>
+            {' '}
+            on <strong>{activityName}</strong>
+          </>
+        ) : null}
+      </>
+    )
+  }
+
   // 'follow'
   return (
     <>
@@ -53,6 +82,7 @@ function describeNotification(notification) {
 }
 
 export function NotificationsPage() {
+  const { refresh, decrementUnread, clearUnread } = useNotificationsContext()
   const [notifications, setNotifications] = useState([])
   const [nextCursor, setNextCursor] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -75,9 +105,13 @@ export function NotificationsPage() {
       .finally(() => {
         if (!cancelled) setIsLoading(false)
       })
+    // The bell's count was last refreshed on its own schedule — refresh it
+    // again here so it's accurate the moment you actually open the inbox.
+    refresh()
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function loadMore() {
@@ -97,8 +131,10 @@ export function NotificationsPage() {
     // Optimistic — this is a low-stakes, easily-reversible UI state, not
     // data that needs to round-trip before reflecting locally.
     setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)))
+    decrementUnread(1)
     markNotificationReadRequest(notification.id).catch(() => {
       setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, isRead: false } : n)))
+      refresh()
     })
   }
 
@@ -106,8 +142,12 @@ export function NotificationsPage() {
     setIsMarkingAll(true)
     const previous = notifications
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    clearUnread()
     markAllNotificationsReadRequest()
-      .catch(() => setNotifications(previous))
+      .catch(() => {
+        setNotifications(previous)
+        refresh()
+      })
       .finally(() => setIsMarkingAll(false))
   }
 

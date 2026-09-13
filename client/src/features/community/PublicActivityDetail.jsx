@@ -5,6 +5,8 @@ import { useAuth } from '../auth/useAuth.js'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
 import { ReportButton } from './ReportButton.jsx'
+import { PublicPhotoGallery } from './PublicPhotoGallery.jsx'
+import { CommentSection } from './CommentSection.jsx'
 import {
   formatDate,
   formatDuration,
@@ -90,6 +92,8 @@ export function PublicActivityDetail() {
 
   return (
     <div className="public-activity">
+      {activity.photos?.length > 0 && <PublicPhotoGallery photos={activity.photos} />}
+
       <div className="public-activity-header">
         <h1>{activity.name}</h1>
         <p className="public-activity-meta">
@@ -97,6 +101,16 @@ export function PublicActivityDetail() {
           {location?.placeName && ` · ${location.placeName}`}
           {location?.wilaya && `, ${location.wilaya}`}
         </p>
+        {activity.author && (
+          <p className="public-activity-author">
+            By{' '}
+            {activity.author.username ? (
+              <Link to={`/community/users/${activity.author.username}`}>{activity.author.name}</Link>
+            ) : (
+              activity.author.name
+            )}
+          </p>
+        )}
         {social?.groupName && <p className="public-activity-group">With {social.groupName}</p>}
       </div>
 
@@ -175,6 +189,8 @@ export function PublicActivityDetail() {
           <ReportButton onSubmit={(reason, details) => reportActivityRequest(activity.id, reason, details)} />
         </div>
       )}
+
+      <CommentSection activityId={activity.id} activityOwnerId={activity.authorId} currentUser={user} />
     </div>
   )
 }

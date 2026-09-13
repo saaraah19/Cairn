@@ -6,6 +6,8 @@ import {
   updateCommentRequest,
   deleteCommentRequest,
   reportCommentRequest,
+  likeCommentRequest,
+  unlikeCommentRequest,
 } from './api.js'
 import { formatDate } from '../activities/formatters.js'
 import { ReportButton } from './ReportButton.jsx'
@@ -15,11 +17,58 @@ function CommentAuthor({ comment }) {
   return <span className="comment-author">{comment.authorName ?? comment.authorUsername ?? 'A hiker'}</span>
 }
 
-function CommentItem({ comment, currentUser, isActivityOwner, onUpdated, onDeleted }) {
+// One like button, shared by top-level comments and replies alike — a
+// like is just a like regardless of nesting level. Optimistic toggle: the
+// count and hasLiked flip immediately, and roll back only if the request
+// actually fails.
+function CommentLikeButton({ comment, currentUser, onLikeChanged }) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function toggle() {
+    if (!currentUser || isSubmitting) return
+    setIsSubmitting(true)
+    const wasLiked = comment.hasLiked
+    onLikeChanged(comment.id, { hasLiked: !wasLiked, likesCount: comment.likesCount + (wasLiked ? -1 : 1) })
+    try {
+      const result = wasLiked ? await unlikeCommentRequest(comment.id) : await likeCommentRequest(comment.id)
+      onLikeChanged(comment.id, result)
+    } catch {
+      onLikeChanged(comment.id, { hasLiked: wasLiked, likesCount: comment.likesCount })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={`comment-like-button${comment.hasLiked ? ' liked' : ''}`}
+      onClick={toggle}
+      disabled={!currentUser || isSubmitting}
+    >
+      ▲ {comment.likesCount > 0 ? comment.likesCount : 'Like'}
+    </button>
+  )
+}
+
+function CommentItem({
+  comment,
+  currentUser,
+  isActivityOwner,
+  isReply = false,
+  onUpdated,
+  onDeleted,
+  onLikeChanged,
+  onReplyPosted,
+}) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(comment.text)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [isReplying, setIsReplying] = useState(false)
+  const [replyDraft, setReplyDraft] = useState('')
+  const [isPostingReply, setIsPostingReply] = useState(false)
+  const [replyError, setReplyError] = useState(null)
 
   const isAuthor = currentUser && String(currentUser._id) === String(comment.authorId)
   const canDelete = isAuthor || isActivityOwner
@@ -43,15 +92,32 @@ function CommentItem({ comment, currentUser, isActivityOwner, onUpdated, onDelet
     setIsSaving(true)
     try {
       await deleteCommentRequest(comment.id)
-      onDeleted(comment.id)
+      onDeleted(comment)
     } catch (err) {
       setError(err.message)
       setIsSaving(false)
     }
   }
 
+  async function handleReplySubmit(e) {
+    e.preventDefault()
+    if (!replyDraft.trim()) return
+    setIsPostingReply(true)
+    setReplyError(null)
+    try {
+      const data = await postCommentRequest(comment.activityId, replyDraft.trim(), comment.id)
+      onReplyPosted(comment.id, data.comment)
+      setReplyDraft('')
+      setIsReplying(false)
+    } catch (err) {
+      setReplyError(err.message)
+    } finally {
+      setIsPostingReply(false)
+    }
+  }
+
   return (
-    <li className="comment-item">
+    <li className={`comment-item${isReply ? ' comment-item-reply' : ''}`}>
       <div className="comment-item-header">
         <CommentAuthor comment={comment} />
         <span className="comment-date">
@@ -86,8 +152,19 @@ function CommentItem({ comment, currentUser, isActivityOwner, onUpdated, onDelet
 
       {error && <p className="comment-error">{error}</p>}
 
-      {(isAuthor || canDelete) && !isEditing && (
+      {!isEditing && (
         <div className="comment-actions">
+          <CommentLikeButton comment={comment} currentUser={currentUser} onLikeChanged={onLikeChanged} />
+
+          {/* Replying to a reply isn't supported — threading is capped at
+              one level (docs/08_COMMUNITY_PROPOSAL.md §5's 2026-09-13
+              revision), so this action only shows on top-level comments. */}
+          {!isReply && currentUser && (
+            <button type="button" onClick={() => setIsReplying((v) => !v)}>
+              Reply
+            </button>
+          )}
+
           {isAuthor && (
             <button type="button" onClick={() => setIsEditing(true)}>
               Edit
@@ -98,14 +175,52 @@ function CommentItem({ comment, currentUser, isActivityOwner, onUpdated, onDelet
               Delete
             </button>
           )}
+
+          {/* Reporting is for someone else's comment — never your own. */}
+          {currentUser && !isAuthor && (
+            <ReportButton onSubmit={(reason, details) => reportCommentRequest(comment.id, reason, details)} />
+          )}
         </div>
       )}
 
-      {/* Reporting is for someone else's comment — never your own. */}
-      {currentUser && !isAuthor && !isEditing && (
-        <div className="comment-actions">
-          <ReportButton onSubmit={(reason, details) => reportCommentRequest(comment.id, reason, details)} />
-        </div>
+      {isReplying && (
+        <form className="comment-reply-form" onSubmit={handleReplySubmit}>
+          <textarea
+            value={replyDraft}
+            onChange={(e) => setReplyDraft(e.target.value)}
+            placeholder={`Reply to ${comment.authorName ?? 'this comment'}…`}
+            maxLength={1000}
+            rows={2}
+            autoFocus
+          />
+          {replyError && <p className="comment-error">{replyError}</p>}
+          <div className="comment-edit-actions">
+            <button type="submit" disabled={isPostingReply || !replyDraft.trim()}>
+              {isPostingReply ? 'Replying…' : 'Reply'}
+            </button>
+            <button type="button" className="comment-cancel" onClick={() => setIsReplying(false)} disabled={isPostingReply}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {comment.replies?.length > 0 && (
+        <ul className="comment-replies">
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              currentUser={currentUser}
+              isActivityOwner={isActivityOwner}
+              isReply
+              onUpdated={onUpdated}
+              onDeleted={onDeleted}
+              onLikeChanged={onLikeChanged}
+              onReplyPosted={onReplyPosted}
+            />
+          ))}
+        </ul>
       )}
     </li>
   )
@@ -162,17 +277,47 @@ export function CommentSection({ activityId, activityOwnerId, currentUser }) {
     }
   }
 
-  function handleUpdated(updated) {
-    setComments((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+  // A single updater walks both top-level comments and their nested
+  // replies — used by edit, like, delete, and reply-posted, since all four
+  // need to find "the one comment or reply with this id" and either patch
+  // it or remove it, regardless of which level it lives at.
+  function mapCommentTree(list, id, transform) {
+    return list.map((c) => {
+      if (c.id === id) return transform(c)
+      if (c.replies?.length) return { ...c, replies: mapCommentTree(c.replies, id, transform) }
+      return c
+    })
   }
 
-  function handleDeleted(id) {
-    setComments((prev) => prev.filter((c) => c.id !== id))
+  function handleUpdated(updated) {
+    setComments((prev) => mapCommentTree(prev, updated.id, () => updated))
   }
+
+  function handleLikeChanged(id, patch) {
+    setComments((prev) => mapCommentTree(prev, id, (c) => ({ ...c, ...patch })))
+  }
+
+  function handleDeleted(deleted) {
+    if (!deleted.parentCommentId) {
+      setComments((prev) => prev.filter((c) => c.id !== deleted.id))
+      return
+    }
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === deleted.parentCommentId ? { ...c, replies: c.replies.filter((r) => r.id !== deleted.id) } : c
+      )
+    )
+  }
+
+  function handleReplyPosted(parentId, reply) {
+    setComments((prev) => prev.map((c) => (c.id === parentId ? { ...c, replies: [...(c.replies ?? []), reply] } : c)))
+  }
+
+  const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies?.length ?? 0), 0)
 
   return (
     <div className="comment-section">
-      <h2>Comments {comments.length > 0 && `(${comments.length})`}</h2>
+      <h2>Comments {totalCount > 0 && `(${totalCount})`}</h2>
 
       {isLoading && <p className="comment-loading">Loading comments…</p>}
 
@@ -188,6 +333,8 @@ export function CommentSection({ activityId, activityOwnerId, currentUser }) {
               isActivityOwner={isActivityOwner}
               onUpdated={handleUpdated}
               onDeleted={handleDeleted}
+              onLikeChanged={handleLikeChanged}
+              onReplyPosted={handleReplyPosted}
             />
           ))}
         </ul>

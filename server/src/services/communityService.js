@@ -2,6 +2,7 @@ import { Activity } from '../models/Activity.js'
 import { User } from '../models/User.js'
 import { Group } from '../models/Group.js'
 import { Destination } from '../models/Destination.js'
+import { Photo } from '../models/Photo.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { getPublicStatistics } from './communityStatisticsService.js'
 import { hasUserGivenKudos } from './kudosService.js'
@@ -38,6 +39,47 @@ export async function resolvePublicDestination(destinationId) {
   return { name: destination.name, wilaya: destination.location?.wilaya ?? '' }
 }
 
+// Resolves an activity's author to a minimal public reference. The name is
+// always shown — it's already effectively attached to a public activity, so
+// hiding it entirely would just be confusing without adding real privacy.
+// `username` is the ONLY thing gated on `isPublicProfile`: linking anywhere
+// (Follow, the profile page) only makes sense once that's been explicitly
+// opted into, otherwise the link 404s. This is the actual mechanism that
+// makes a profile/Follow reachable from a public activity at all — see
+// PublicActivityCard.jsx / PublicActivityDetail.jsx, which render a plain
+// (unlinked) name when username is null.
+async function resolvePublicAuthor(userId) {
+  const user = await User.findById(userId).select('name username isPublicProfile').lean()
+  if (!user) return { name: 'A hiker', username: null }
+  return {
+    name: user.name,
+    username: user.isPublicProfile ? user.username : null,
+  }
+}
+
+// A single lightweight photo for card/list display — reuses the same
+// Activity.coverPhotoId reference the private activityService already
+// populates for its own list view (see activityService.js's
+// `.populate('coverPhotoId', 'secureUrl')`), rather than a second,
+// separate Photo query. `activity` here must already have coverPhotoId
+// populated by the caller (paginatePublicActivities / getPublicActivityById)
+// — this function just whitelists the result down to `secureUrl`, same
+// reasoning as every other resolver in this file.
+function resolvePublicCoverPhoto(activity) {
+  return activity.coverPhotoId?.secureUrl ? { secureUrl: activity.coverPhotoId.secureUrl } : null
+}
+
+// The full gallery — only resolved for a single activity's detail view,
+// never for a list/feed page, to avoid an unbounded N-photos-per-card
+// query cost across a whole page of results. A direct Photo query (not
+// coverPhotoId) since it needs every photo, not just the one cover
+// reference. Whitelisted to exactly what PublicPhotoGallery.jsx needs: no
+// cloudinaryPublicId, no userId.
+async function resolvePublicPhotos(activityId) {
+  const photos = await Photo.find({ activityId }).select('secureUrl').sort({ isCover: -1, createdAt: 1 }).lean()
+  return photos.map((p) => ({ id: p._id, secureUrl: p.secureUrl }))
+}
+
 // Builds the public representation of an Activity. The caller is
 // responsible for having already verified `activity.visibility === 'public'`
 // at query time (see docs/08_COMMUNITY_PROPOSAL.md §9-10) — this function
@@ -50,20 +92,23 @@ export async function resolvePublicDestination(destinationId) {
 // and any raw ObjectId reference other than the activity's own id and its
 // author's id (needed for routing/attribution, not private data on its own).
 //
-// Photos/coverPhotoId are intentionally not resolved here yet — building
-// that requires deciding, at the point an actual public activity endpoint
-// is wired (M2), how much of the Photo collection to expose (a single cover
-// image vs. the full gallery), which is a real product/API-shape decision
-// this foundation milestone shouldn't pre-empt speculatively.
+// Photos: `coverPhoto` (a single lightweight reference) is resolved here,
+// in every DTO, for card/list display. The full gallery (`photos`) is
+// deliberately NOT resolved here — it's only attached in
+// getPublicActivityById, for the single-activity detail view, to avoid an
+// unbounded per-photo query cost across a whole feed/profile page of cards.
 export async function toPublicActivityDTO(activity) {
-  const [groupName, destination] = await Promise.all([
+  const [groupName, destination, author] = await Promise.all([
     resolvePublicGroupName(activity.social?.groupId),
     resolvePublicDestination(activity.destinationId),
+    resolvePublicAuthor(activity.userId),
   ])
+  const coverPhoto = resolvePublicCoverPhoto(activity)
 
   return {
     id: activity._id,
     authorId: activity.userId,
+    author,
     name: activity.name,
     type: activity.type,
     date: activity.date,
@@ -98,6 +143,7 @@ export async function toPublicActivityDTO(activity) {
     },
     publicCaption: activity.publicCaption ?? '',
     destination,
+    coverPhoto,
     kudosCount: activity.kudosCount ?? 0,
     createdAt: activity.createdAt,
     // No costDzd, gearItemIds, activityNumber, visibility.
@@ -131,7 +177,10 @@ export function toPublicProfileDTO(user) {
 // takes effect immediately on the next read, since nothing here is cached
 // (docs/08_COMMUNITY_PROPOSAL.md §9).
 export async function getPublicActivityById(activityId, viewerUserId) {
-  const activity = await Activity.findOne({ _id: activityId, visibility: 'public' })
+  const activity = await Activity.findOne({ _id: activityId, visibility: 'public' }).populate(
+    'coverPhotoId',
+    'secureUrl'
+  )
   if (!activity) {
     throw new ApiError(404, 'NOT_FOUND', 'Activity not found.')
   }
@@ -140,6 +189,10 @@ export async function getPublicActivityById(activityId, viewerUserId) {
   // (per-request) rather than inside the DTO builder itself, which has no
   // notion of "who's asking" — only "what's this activity's public shape."
   dto.hasKudos = await hasUserGivenKudos(viewerUserId, activityId)
+  // The full gallery is only ever resolved here, for a single activity —
+  // see resolvePublicPhotos's own comment for why it's excluded from the
+  // shared DTO builder used by feed/profile lists.
+  dto.photos = await resolvePublicPhotos(activity._id)
   return dto
 }
 
@@ -160,6 +213,7 @@ async function paginatePublicActivities(baseFilter, { cursor, limit = 12 } = {})
   const rows = await Activity.find(filter)
     .sort({ date: -1, _id: -1 })
     .limit(limit + 1)
+    .populate('coverPhotoId', 'secureUrl')
 
   const hasMore = rows.length > limit
   const page = hasMore ? rows.slice(0, limit) : rows

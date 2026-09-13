@@ -113,7 +113,7 @@ export function PublicProfile() {
       <div className="public-profile-stats">
         <div className="public-profile-stat">
           <span className="public-profile-stat-value">{statistics.totals.activities}</span>
-          <span className="public-profile-stat-label">Public activities</span>
+          <span className="public-profile-stat-label">Activities</span>
         </div>
         <div className="public-profile-stat">
           <span className="public-profile-stat-value">{statistics.totals.distanceKm}</span>

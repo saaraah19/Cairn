@@ -10,6 +10,7 @@
 
 import { Activity } from '../src/models/Activity.js'
 import { Comment } from '../src/models/Comment.js'
+import { CommentLike } from '../src/models/CommentLike.js'
 import { Notification } from '../src/models/Notification.js'
 import { listComments, createComment, updateComment, deleteComment, assertCanDeleteComment } from '../src/services/commentService.js'
 
@@ -73,21 +74,36 @@ function installMocks() {
     return { ...found, save: found.save, populate: async function () { return this } }
   }
   Comment.find = (filter) => {
-    const matched = comments.filter((c) => c.activityId === filter.activityId)
-    return {
-      sort: () => ({
-        limit: (n) => ({
-          populate: () => ({
-            then: (resolve) => resolve(matched.slice(0, n)),
-          }),
-        }),
-      }),
+    const matched = comments.filter(
+      (c) =>
+        (filter.activityId === undefined || c.activityId === filter.activityId) &&
+        (filter.parentCommentId === undefined ||
+          (filter.parentCommentId === null ? c.parentCommentId === null : c.parentCommentId === filter.parentCommentId))
+    )
+    // Every method returns the same chainable object so it works whether
+    // called as .sort().limit().populate() (listComments' top-level query)
+    // or just .sort().populate() with no .limit() (listReplies' query).
+    const chain = {
+      sort: () => chain,
+      limit: () => chain,
+      populate: () => chain,
+      then: (resolve) => resolve(matched),
     }
+    return chain
   }
   Comment.deleteOne = async (filter) => {
     const idx = comments.findIndex((c) => c._id === filter._id)
     if (idx !== -1) comments.splice(idx, 1)
   }
+  // No reply fixtures exist in this file's tests (that's M10's job) — a
+  // real no-op is enough to keep deleteComment's cascade step from
+  // crashing on a missing mock.
+  Comment.deleteMany = async () => {}
+
+  // toCommentDTO calls hasUserLikedComment for every comment/reply it
+  // builds — likes aren't what M6 tests, so this just needs to exist and
+  // return false without touching a real database.
+  CommentLike.exists = async () => null
 
   Notification.create = async (doc) => {
     notifications.push(doc)

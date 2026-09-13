@@ -19,6 +19,19 @@
 
 import { toPublicActivityDTO, toPublicProfileDTO } from '../src/services/communityService.js'
 import { create as createNotification } from '../src/services/notifyService.js'
+import { User } from '../src/models/User.js'
+
+// resolvePublicAuthor (added in the M7-M9 checkpoint) always calls User,
+// unlike resolvePublicGroupName/resolvePublicDestination which
+// short-circuit on a null id. Mocked here so this file can keep its
+// original "no MongoDB connection required" design intact — this lookup
+// gets its own real end-to-end coverage via the live test-community-*.sh
+// scripts, same as every other resolver in this file's stated philosophy.
+// (resolvePublicCoverPhoto needs no mock — it reads activity.coverPhotoId
+// directly, no DB call, and the fixture below simply doesn't set it.)
+User.findById = () => ({
+  select: () => ({ lean: () => Promise.resolve({ name: 'Amel Belkacem', username: 'amelb', isPublicProfile: true }) }),
+})
 
 let failures = 0
 
@@ -93,6 +106,9 @@ async function run() {
   assert(activityDTO.kudosCount === 3, 'kudosCount is exposed')
   assert(activityDTO.review.challenges === 'Steep final ascent', 'review.challenges is exposed (public-eligible)')
   assert(activityDTO.review.notes === undefined, 'review.notes key is not present at all in the DTO')
+  assert(activityDTO.author.name === 'Amel Belkacem', "The author's name is exposed")
+  assert(activityDTO.author.username === 'amelb', "The author's username is exposed when isPublicProfile is true")
+  assert(activityDTO.coverPhoto === null, 'coverPhoto is null when no Photo exists yet, not an error')
 
   console.log('')
 

@@ -68,6 +68,41 @@
   color: var(--color-moss-deep);
 }
 
+.comment-like-button {
+  font-weight: 500;
+}
+
+.comment-like-button.liked {
+  color: var(--color-moss-deep);
+}
+
+.comment-item-reply {
+  border-bottom: none;
+  padding: var(--space-sm) 0 0;
+}
+
+.comment-replies {
+  list-style: none;
+  margin: var(--space-sm) 0 0;
+  padding: 0 0 0 var(--space-lg);
+  border-left: var(--border-hairline);
+}
+
+.comment-reply-form {
+  margin-top: var(--space-sm);
+}
+
+.comment-reply-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  font-family: inherit;
+  font-size: 0.88rem;
+  resize: vertical;
+}
+
 .comment-edit textarea {
   width: 100%;
   box-sizing: border-box;

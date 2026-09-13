@@ -20,6 +20,18 @@
   margin-top: 0.2rem;
 }
 
+.public-activity-author {
+  color: var(--color-mist);
+  font-size: 0.88rem;
+  margin-top: 0.3rem;
+}
+
+.public-activity-author a {
+  color: var(--color-moss-deep);
+  font-weight: 500;
+  text-decoration: none;
+}
+
 .public-activity-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));

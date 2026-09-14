@@ -28,3 +28,17 @@ export function logoutRequest() {
 export function meRequest() {
   return apiRequest('/api/auth/me')
 }
+
+export function forgotPasswordRequest({ email }) {
+  return apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export function resetPasswordRequest({ token, password }) {
+  return apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  })
+}

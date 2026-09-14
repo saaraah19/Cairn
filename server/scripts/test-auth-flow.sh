@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Manual verification script for Phase 1a — Email/Password Authentication.
+# Manual verification script for email/password authentication, covering
+# Phase 1a (register/login/refresh/logout) plus the later-added
+# forgot-password/reset-password flow (07_POST_V1_ROADMAP.md §A2).
 # Run this with the server already running (npm run dev) and a real
 # MongoDB connection configured in server/.env.
 #
@@ -59,6 +61,21 @@ echo "=== 10. /me should still work after refresh ==="
 curl -s -b "$COOKIE_JAR" "$BASE_URL/api/auth/me"
 echo -e "\n"
 
+echo "=== 11. Forgot-password for a REAL email — expect the generic message ==="
+curl -s -X POST "$BASE_URL/api/auth/forgot-password" -H "Content-Type: application/json" \
+  -d "{\"email\":\"$EMAIL\"}"
+echo -e "\n"
+
+echo "=== 12. Forgot-password for a NONEXISTENT email — expect the SAME generic message (no enumeration) ==="
+curl -s -X POST "$BASE_URL/api/auth/forgot-password" -H "Content-Type: application/json" \
+  -d "{\"email\":\"definitely-not-a-real-account_$(date +%s)@example.com\"}"
+echo -e "\n"
+
+echo "=== 13. Resetting with a bogus token — expect 400 ==="
+curl -s -w " [HTTP %{http_code}]" -X POST "$BASE_URL/api/auth/reset-password" -H "Content-Type: application/json" \
+  -d '{"token":"not-a-real-token","password":"newcorrecthorsebattery"}'
+echo -e "\n"
+
 rm -f "$COOKIE_JAR"
 echo "=== Done. Review each numbered step above against its expected result in the comments. ==="
 echo ""
@@ -66,3 +83,10 @@ echo "Note: Google sign-in (POST /api/auth/google) can't be tested via this scri
 echo "it requires a real ID token minted by Google Identity Services in a browser."
 echo "Test it manually: run the client, click 'Sign in with Google', and confirm you land"
 echo "in the authenticated view. Check server logs / MongoDB for the created/linked user."
+echo ""
+echo "Note: completing an actual password reset also can't be fully automated here — step 11"
+echo "generates a real reset token, but the raw token is only ever emailed (or, if SMTP isn't"
+echo "configured, logged to the SERVER's own console by mailService, not returned by the API)."
+echo "To test the full flow manually: check the server console output for the reset link logged"
+echo "after step 11, extract the token from it, then POST it to /api/auth/reset-password with a"
+echo "new password, and confirm you can log in with the new password afterward."

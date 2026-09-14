@@ -1,9 +1,9 @@
 import { Router } from 'express'
-import { register, login, google, logout, refresh, me } from '../controllers/authController.js'
+import { register, login, google, logout, refresh, me, forgotPassword, resetPasswordHandler } from '../controllers/authController.js'
 import { validateBody } from '../middleware/validate.js'
 import { authenticate } from '../middleware/authenticate.js'
 import { authRateLimiter } from '../middleware/rateLimit.js'
-import { registerSchema, loginSchema } from '../validators/authValidators.js'
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators/authValidators.js'
 
 const router = Router()
 
@@ -19,5 +19,12 @@ router.post('/google', authRateLimiter, google)
 router.post('/logout', logout)
 router.post('/refresh', refresh)
 router.get('/me', authenticate, me)
+
+// forgot-password/reset-password are rate-limited too — same class of
+// abuse surface as register/login (spamming reset emails, or brute-
+// forcing a reset token, though the token itself is 32 random bytes and
+// not practically guessable within any rate limit).
+router.post('/forgot-password', authRateLimiter, validateBody(forgotPasswordSchema), forgotPassword)
+router.post('/reset-password', authRateLimiter, validateBody(resetPasswordSchema), resetPasswordHandler)
 
 export default router

@@ -6,9 +6,8 @@ Produced at the V1 completion checkpoint (2026-09-05); revised 2026-09-09 once t
 
 ## A. Must Fix
 
-- **A1 — Rate limiting on auth endpoints.** Named as a minimum V1 security requirement (`02_TECHNICAL_ARCHITECTURE.md` §35) and never implemented across all twelve V1 phases. Small, urgent, no product-direction implications.
-  - **Scope update (2026-09-09, finalized in Community Revision 3):** now that Community's architecture is finalized, rate limiting is a confirmed, explicit **pre-public-launch dependency** covering `/api/auth/*` plus every new Community write endpoint: kudos (give/remove), comments (create/edit/delete), follow/unfollow, and report creation. See `08_COMMUNITY_PROPOSAL.md` §14 for the exact endpoint list. This doesn't change A1's priority, just finalizes what "done" means for it before Community can launch publicly.
-- **A2 — Account-recovery flow for password-only accounts.** No forgot-password/email-reset flow exists; no email-sending infrastructure exists anywhere in the stack. Needs an email-service decision before implementation can start.
+- **A1 — Rate limiting on auth endpoints.** ~~Named as a minimum V1 security requirement (`02_TECHNICAL_ARCHITECTURE.md` §35) and never implemented across all twelve V1 phases.~~ **RESOLVED 2026-09-13, as part of M11 — Cross-Feature Security Audit.** `server/src/middleware/rateLimit.js` now covers `/api/auth/register`, `/login`, `/google`, plus every Community write endpoint (kudos, comments, comment likes, follow, reports) named in `08_COMMUNITY_PROPOSAL.md` §14. See `PROGRESS.md`'s M11 entry for full detail.
+- **A2 — Account-recovery flow for password-only accounts.** No forgot-password/email-reset flow exists; no email-sending infrastructure exists anywhere in the stack. Needs an email-service decision before implementation can start. **Still open.**
 
 ## B. Should Improve
 
@@ -35,7 +34,7 @@ Produced at the V1 completion checkpoint (2026-09-05); revised 2026-09-09 once t
 
 - **Community** — see status below. No longer "not currently justified" — **officially approved** as the next major chapter as of 2026-09-09. Full architecture in `08_COMMUNITY_PROPOSAL.md`.
 - **Landing/welcome page for unauthenticated visitors** — approved alongside Community; see status below.
-- Maps, GPX import/export, route recording, trail discovery — still not justified by any current product signal.
+- Maps, GPX import/export, route recording, trail discovery — **explicit product-owner decision, 2026-09-13**: deferred until a native mobile app exists, specifically because live GPS route tracking (the actual feature wanted — Wikiloc/Komoot-style start/track/stop during a hike) is not reliable in a mobile browser (background location access is heavily restricted, especially on iOS Safari; a phone locked/pocketed mid-hike would silently lose track data). GPX *import* (uploading an already-recorded track from another app/device) was discussed as a smaller, buildable-now alternative that sidesteps the background-tracking problem, but has not been decided on either way.
 - Native mobile application — still not justified.
 - Offline mode — still not justified.
 - AI features of any kind — still explicitly prohibited absent a genuine identified user problem (`01_PRODUCT_SPEC.md` §34, `Claude.md` §9).

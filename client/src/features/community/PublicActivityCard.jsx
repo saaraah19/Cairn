@@ -45,6 +45,13 @@ export function PublicActivityCard({ activity }) {
           </p>
 
           {stats.length > 0 && <p className="activity-card-stats">{stats.join(' · ')}</p>}
+
+          {(activity.kudosCount > 0 || activity.commentsCount > 0) && (
+            <p className="activity-card-social-counts">
+              {activity.kudosCount > 0 && <span>▲ {activity.kudosCount}</span>}
+              {activity.commentsCount > 0 && <span>💬 {activity.commentsCount}</span>}
+            </p>
+          )}
         </div>
       </Link>
 

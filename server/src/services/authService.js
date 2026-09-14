@@ -1,9 +1,18 @@
 import bcrypt from 'bcrypt'
+import crypto from 'node:crypto'
 import { User } from '../models/User.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { generateUniqueUsername } from '../utils/generateUsername.js'
+import { mailService } from './mailService.js'
+import { env } from '../config/env.js'
 
 const SALT_ROUNDS = 12
+const RESET_TOKEN_BYTES = 32
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000 // 30 minutes
+
+function hashResetToken(rawToken) {
+  return crypto.createHash('sha256').update(rawToken).digest('hex')
+}
 
 export async function registerUser({ name, email, username, password }) {
   const existingEmail = await User.findOne({ email })
@@ -99,4 +108,55 @@ export async function getUserById(userId) {
     throw new ApiError(404, 'USER_NOT_FOUND', 'User not found.')
   }
   return user
+}
+
+// Deliberately never reveals whether the email exists, whether it belongs
+// to a Google-only account, or anything else — the controller always
+// returns the same generic message regardless of what happens in here.
+// This function's return value is intentionally unused by the controller;
+// it exists only so tests can observe what actually happened without
+// weakening the controller's own response.
+export async function requestPasswordReset(email) {
+  const user = await User.findOne({ email })
+
+  // No account, or a Google-only account with no password to reset —
+  // both cases produce no visible difference to the caller. Emailing a
+  // Google-only account a "reset your password" link would be actively
+  // confusing (they have no password), so this simply does nothing for
+  // that case rather than sending a misleading email.
+  if (!user || !user.passwordHash) {
+    return { sent: false }
+  }
+
+  const rawToken = crypto.randomBytes(RESET_TOKEN_BYTES).toString('hex')
+  user.passwordResetTokenHash = hashResetToken(rawToken)
+  user.passwordResetExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS)
+  await user.save()
+
+  const resetUrl = `${env.clientUrls[0]}/reset-password?token=${rawToken}`
+  await mailService.sendPasswordResetEmail(user.email, resetUrl)
+
+  return { sent: true }
+}
+
+export async function resetPassword(rawToken, newPassword) {
+  const tokenHash = hashResetToken(rawToken)
+  const user = await User.findOne({
+    passwordResetTokenHash: tokenHash,
+    passwordResetExpiresAt: { $gt: new Date() },
+  })
+
+  if (!user) {
+    throw new ApiError(400, 'INVALID_OR_EXPIRED_TOKEN', 'This reset link is invalid or has expired.')
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS)
+  // Single-use: cleared immediately so the same link can never be reused,
+  // and so a second reset request's link doesn't get silently
+  // invalidated by reusing a stale one (there's only ever one valid link
+  // per user — the most recently requested one — but clearing it here
+  // rather than relying solely on expiry keeps that invariant exact).
+  user.passwordResetTokenHash = null
+  user.passwordResetExpiresAt = null
+  await user.save()
 }

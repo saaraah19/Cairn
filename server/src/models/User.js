@@ -75,14 +75,26 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Forgot-password flow. The RAW token is emailed to the user and
+    // never stored — only a SHA-256 hash of it, so a database compromise
+    // alone can't be used to reset anyone's password. Single-use: cleared
+    // on successful reset. Cleared/overwritten on every new request, so
+    // only the most recently requested link is ever valid.
+    passwordResetTokenHash: { type: String, default: null },
+    passwordResetExpiresAt: { type: Date, default: null },
   },
   { timestamps: true }
 )
 
-// Never expose passwordHash through API responses (docs/02_TECHNICAL_ARCHITECTURE.md §6).
+// Never expose passwordHash or the reset-token hash through API responses
+// (docs/02_TECHNICAL_ARCHITECTURE.md §6) — same reasoning as passwordHash:
+// even though it's a hash, not the raw token, there's no reason a client
+// ever needs to see it.
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     delete ret.passwordHash
+    delete ret.passwordResetTokenHash
+    delete ret.passwordResetExpiresAt
     return ret
   },
 })

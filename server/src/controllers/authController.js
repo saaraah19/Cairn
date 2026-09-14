@@ -3,6 +3,8 @@ import {
   authenticateUser,
   authenticateOrCreateGoogleUser,
   getUserById,
+  requestPasswordReset,
+  resetPassword,
 } from '../services/authService.js'
 import { success, ApiError } from '../utils/apiResponse.js'
 import { verifyGoogleIdToken } from '../utils/googleAuth.js'
@@ -96,6 +98,29 @@ export async function me(req, res, next) {
   try {
     const user = await getUserById(req.userId)
     success(res, { user })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Always responds with the same generic message regardless of whether the
+// email exists, belongs to a Google-only account, or anything else —
+// requestPasswordReset's own return value is deliberately not inspected
+// here, so there is no code path by which the response could differ.
+// Prevents email enumeration via this endpoint.
+export async function forgotPassword(req, res, next) {
+  try {
+    await requestPasswordReset(req.body.email)
+    success(res, { message: 'If an account exists for that email, a password reset link has been sent.' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function resetPasswordHandler(req, res, next) {
+  try {
+    await resetPassword(req.body.token, req.body.password)
+    success(res, { reset: true })
   } catch (err) {
     next(err)
   }

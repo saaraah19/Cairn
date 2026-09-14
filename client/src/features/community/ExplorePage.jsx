@@ -15,18 +15,32 @@ const TYPE_OPTIONS = [
   { value: 'camping', label: 'Camping' },
 ]
 
+// Debounces a fast-changing input value (typed text) into a slower-
+// changing one, so search/wilaya don't fire a request on every keystroke.
+function useDebouncedValue(value, delayMs) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(value), delayMs)
+    return () => clearTimeout(timeout)
+  }, [value, delayMs])
+  return debounced
+}
+
 export function ExplorePage() {
   const { user } = useAuth()
   const [scope, setScope] = useState('explore')
   const [type, setType] = useState('')
-  const [wilaya, setWilaya] = useState('')
+  const [wilayaInput, setWilayaInput] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const wilaya = useDebouncedValue(wilayaInput, 400)
+  const search = useDebouncedValue(searchInput, 400)
   const [activities, setActivities] = useState([])
   const [nextCursor, setNextCursor] = useState(null)
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  const requestKey = JSON.stringify({ scope, type, wilaya })
+  const requestKey = JSON.stringify({ scope, type, wilaya, search })
 
   // Chronological only — no ranking/recommendation logic, matching
   // docs/08_COMMUNITY_PROPOSAL.md §6's explicit rejection of algorithmic
@@ -34,7 +48,7 @@ export function ExplorePage() {
   useEffect(() => {
     let cancelled = false
     setIsLoading(true)
-    getFeedRequest({ scope, type, wilaya })
+    getFeedRequest({ scope, type, wilaya, search })
       .then((data) => {
         if (cancelled) return
         setActivities(data.activities)
@@ -56,7 +70,7 @@ export function ExplorePage() {
   function loadMore() {
     if (!nextCursor) return
     setIsLoadingMore(true)
-    getFeedRequest({ scope, type, wilaya, cursor: nextCursor })
+    getFeedRequest({ scope, type, wilaya, search, cursor: nextCursor })
       .then((data) => {
         setActivities((prev) => [...prev, ...data.activities])
         setNextCursor(data.nextCursor)
@@ -107,8 +121,15 @@ export function ExplorePage() {
           type="search"
           placeholder="Filter by wilaya…"
           aria-label="Filter by wilaya"
-          value={wilaya}
-          onChange={(e) => setWilaya(e.target.value)}
+          value={wilayaInput}
+          onChange={(e) => setWilayaInput(e.target.value)}
+        />
+        <input
+          type="search"
+          placeholder="Search by name or username…"
+          aria-label="Search by name or username"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
         />
       </div>
 
@@ -126,7 +147,7 @@ export function ExplorePage() {
       {!isLoading && !error && activities.length === 0 && scope === 'explore' && (
         <EmptyState
           title="Nothing here yet."
-          description="No public activities match these filters right now — try a different type or wilaya, or check back later."
+          description="No public activities match these filters right now — try a different type, wilaya, or search, or check back later."
         />
       )}
 

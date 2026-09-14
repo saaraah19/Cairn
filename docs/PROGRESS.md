@@ -6,7 +6,7 @@ All twelve V1 roadmap phases (`04_DEVELOPMENT_ROADMAP.md`) are implemented. The 
 
 **Verification honesty note** (per explicit product-owner instruction): this section distinguishes what was *actually confirmed* from what was *implemented but not explicitly re-confirmed after deployment*. Nothing below is marked verified unless the product owner said so directly.
 
-Last updated: 2026-09-13 (M11 — Cross-Feature Security Audit: rate limiting + consolidated live audit script; product owner confirmed M0–M10 all working end-to-end against a real dev server)
+Last updated: 2026-09-13 (Forgot-password / reset-password flow implemented — resolves 07_POST_V1_ROADMAP.md §A2, the last remaining "Must Fix" item from the V1 checkpoint)
 
 ---
 
@@ -88,8 +88,8 @@ cairn/
 No confirmed production bugs as of this checkpoint. The product owner has not reported any.
 
 ### Security Gaps (real, should be prioritized)
-- **No rate limiting on authentication endpoints** (`/api/auth/register`, `/login`, `/refresh`) — this was named as a minimum V1 security requirement in `02_TECHNICAL_ARCHITECTURE.md` §35 and was never implemented across all twelve phases. See `07_POST_V1_ROADMAP.md` §A1.
-- **No account-recovery path** for password-only accounts — no forgot-password/email-reset flow exists, and no email-sending infrastructure is integrated anywhere in the stack. See `07_POST_V1_ROADMAP.md` §A2.
+- ~~No rate limiting on authentication endpoints~~ — **RESOLVED 2026-09-13, M11 — Cross-Feature Security Audit.** See `07_POST_V1_ROADMAP.md` §A1.
+- ~~No account-recovery path for password-only accounts~~ — **RESOLVED 2026-09-13.** Forgot-password/reset-password now implemented end to end: `server/src/services/authService.js` (`requestPasswordReset`/`resetPassword`), `server/src/services/mailService.js` (generic SMTP via `nodemailer`, works with any provider; falls back to logging the reset link to the server console when SMTP isn't configured, so local dev needs no real credentials), `+2` fields on `User` (`passwordResetTokenHash`, `passwordResetExpiresAt` — only a SHA-256 hash of the token is ever stored, the raw token only ever exists in the emailed link), `+2` routes (`POST /api/auth/forgot-password`, `/reset-password`, both rate-limited). Never reveals whether an email exists or is Google-only (no enumeration) — the controller's response is identical regardless of what happened internally. New client pages: `ForgotPasswordForm.jsx`, `ResetPasswordForm.jsx`, wired at `/forgot-password` and `/reset-password`, linked from the login form. New test: `server/scripts/test-auth-reset-password-unit.js` — **15/15 passing**, covering no-enumeration, no-email-for-Google-only-accounts, single-use tokens (can't be reused), and expired/bogus token rejection. `server/scripts/test-auth-flow.sh` extended with the parts that CAN be verified without reading server console output (the generic-response/no-enumeration behavior); actually completing a reset end-to-end still requires a human to either configure real SMTP credentials or read the logged link from the server console — noted explicitly in that script. See `07_POST_V1_ROADMAP.md` §A2.
 
 ### Polish / UX Issues
 - **Phase 11's visual/device review was never confirmed** — see above. Sidebar/bottom-bar handoff at 860px, dark mode across multiple pages, Pack My Bag's sticky weight bar, and statistics breakdown bars at narrow widths were the specific items flagged as worth checking.
@@ -280,6 +280,65 @@ See `docs/07_POST_V1_ROADMAP.md` (newly created 2026-09-09 — it was referenced
 - All ten milestones' mocked tests re-run after adding rate limiting — **165/165 still passing, no regressions** (expected: rate limiting is pure Express-layer middleware, never touches service-level logic)
 - `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 warnings, 0 errors
 - `server/scripts/test-community-flow.sh` was written but **not run** — this is the one script in the whole project that specifically *needs* a live, running server to mean anything at all, since the rate-limit-firing checks (Part 3) cannot be meaningfully mocked
+
+---
+
+## Files Changed at This Checkpoint (Explore Feed Enhancements — Kudos/Comment Counts + Search)
+
+Two small product-requested additions on top of M11, between M11 and M12:
+
+1. **Kudos/comment counts shown on Explore cards.** `kudosCount` was already in the public DTO and unused on the card; `commentsCount` is new — a denormalized counter on `Activity`, same pattern as `kudosCount`, kept in sync by `commentService.createComment`/`deleteComment` (counts replies too, i.e. "conversation size" not just top-level thread count; a cascade-delete of a top-level comment decrements by itself *and* every reply it took with it, computed via `Comment.countDocuments` *before* the cascade delete removes them).
+2. **Search by name/username on Explore.** `listPublicFeed` now accepts a `search` param, resolved to matching `User._id`s via a DB-level `$or` name/username regex lookup (not gated by `isPublicProfile` — a private-profile user's public activities are already discoverable and already show that user's name via author attribution, so search reveals nothing browsing wouldn't). Combines correctly with the Following scope as an intersection (search *within* who you follow, not an expansion to the whole platform), not applied as a separate unrelated filter. User input is regex-escaped before use (a pre-existing gap in the `wilaya` filter was fixed at the same time, since it's the same class of bug and directly adjacent code).
+
+**New/Modified (server):**
+- `server/src/models/Activity.js` — `+commentsCount`
+- `server/src/services/commentService.js` — increments/decrements `commentsCount` on create/delete
+- `server/src/services/communityService.js` — `+commentsCount` in the public DTO; `listPublicFeed` `+search` param, `+escapeRegex` helper (also applied retroactively to the pre-existing `wilaya` filter)
+- `server/src/controllers/communityController.js` — `getFeed` threads `search` through
+- `server/scripts/test-community-m4-unit.js` — new search assertions (partial match, case-insensitivity, username match, no-match-returns-empty, correct Following-scope intersection)
+- `server/scripts/test-community-m6-unit.js` — new `commentsCount` create/delete/cascade assertions; **also fixed two pre-existing bugs in this file's own mocks while adding them**: `Activity.findOneAndUpdate`'s mock silently ignored the `update` argument entirely (checked the guard condition but never applied the `$inc`), and `Comment.deleteMany`/`Comment.countDocuments` were stale no-op mocks left over from before this file ever created a real reply — both were mock-only bugs, never real service bugs, caught by writing a real assertion against them instead of trusting the mocks were still accurate
+- `server/scripts/test-community-m10-unit.js` — same `Activity.findOneAndUpdate` mock fix applied (same latent bug, same fix)
+
+**New/Modified (client):**
+- `client/src/features/community/PublicActivityCard.jsx`/`.css` — kudos/comment counts row
+- `client/src/features/community/ExplorePage.jsx` — search input, debounced (400ms) alongside the pre-existing wilaya filter (which had no debounce before this — also fixed as part of the same, adjacent change)
+- `client/src/features/community/api.js` — `getFeedRequest` `+search` param
+
+**Verification:**
+- All ten milestones' mocked tests re-run together — **all passing** (M4 grew from 10 to 15 assertions, M6 grew from 17 to 20)
+- `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 errors
+- No live `.sh` script written for this specific addition — covered implicitly by the next run of `test-community-flow.sh` and the individual feature `.sh` scripts, since this didn't introduce a new route, only new query params and fields on existing ones
+
+---
+
+## Files Changed at This Checkpoint (Forgot-Password / Reset-Password — 07_POST_V1_ROADMAP.md §A2)
+
+The last remaining item from the original V1 "Must Fix" list (§A1, rate limiting, was resolved in M11). With this, both are done.
+
+**New:**
+- `server/src/services/mailService.js` — generic SMTP (`nodemailer`), works with any provider; logs the reset link to the console instead of sending when SMTP isn't configured, so local dev works without real credentials
+- `server/scripts/test-auth-reset-password-unit.js` — mocked, run — **15/15 passing**
+- `client/src/features/auth/ForgotPasswordForm.jsx`
+- `client/src/features/auth/ResetPasswordForm.jsx`
+
+**Modified:**
+- `server/src/models/User.js` — `+passwordResetTokenHash`, `+passwordResetExpiresAt` (both stripped from API responses, same as `passwordHash`)
+- `server/src/services/authService.js` — `+requestPasswordReset`, `+resetPassword`; only a SHA-256 hash of the token is ever stored, never the raw value
+- `server/src/controllers/authController.js`, `server/src/validators/authValidators.js`, `server/src/routes/auth.routes.js` — `+POST /forgot-password`, `+POST /reset-password`, both rate-limited via the existing `authRateLimiter`
+- `server/src/config/env.js` — `+SMTP_HOST/PORT/USER/PASS/FROM`, `+isEmailConfigured` derived flag
+- `server/.env.example` — documented the new SMTP variables
+- `server/package.json` — `+nodemailer`
+- `server/scripts/test-auth-flow.sh` — extended with the parts of the flow that can be verified without reading server console output (no-enumeration checks, bogus-token rejection); the actual end-to-end reset still needs a human either configuring real SMTP or reading the logged link from the server console — noted explicitly in the script
+- `client/src/features/auth/api.js` — `+forgotPasswordRequest`, `+resetPasswordRequest`
+- `client/src/features/auth/LoginForm.jsx`/`authForms.css` — `+"Forgot password?"` link
+- `client/src/App.jsx` — `+/forgot-password`, `+/reset-password` routes (signed-out tree)
+- `docs/07_POST_V1_ROADMAP.md` — §A1 marked resolved (was stale — still said "never implemented" after M11 had already closed it), §A2 marked resolved, GPX/maps entry updated with the 2026-09-13 product decision (deferred until a native app exists)
+
+**Verification performed this checkpoint:**
+- `node scripts/test-auth-reset-password-unit.js` — 15/15 passing, covering: no email enumeration (identical outcome whether the account exists, is Google-only, or doesn't exist at all); a token hash (never the raw token) is what gets stored; a successful reset is single-use (the same token rejected on reuse); an expired token is rejected even though its hash still matches; a bogus/unknown token is rejected the same way as an expired one (no distinguishing information leaked)
+- Re-ran all ten Community milestone test files plus this new one — **all still passing, no regressions**
+- `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 errors
+- `node --input-type=module -e "import('./src/app.js')..."` — confirms the app boots cleanly with the two new rate-limited routes mounted
 
 ---
 

@@ -19,3 +19,11 @@
 .activity-card-author.unlinked {
   color: var(--color-mist);
 }
+
+.activity-card-social-counts {
+  display: flex;
+  gap: var(--space-md);
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-mist);
+}

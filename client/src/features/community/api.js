@@ -9,10 +9,11 @@ export function getPublicProfileRequest(username, { cursor } = {}) {
   return apiRequest(`/api/community/users/${username}${qs}`)
 }
 
-export function getFeedRequest({ scope = 'explore', type, wilaya, cursor } = {}) {
+export function getFeedRequest({ scope = 'explore', type, wilaya, search, cursor } = {}) {
   const params = new URLSearchParams({ scope })
   if (type) params.set('type', type)
   if (wilaya) params.set('wilaya', wilaya)
+  if (search) params.set('search', search)
   if (cursor) params.set('cursor', cursor)
   return apiRequest(`/api/community/feed?${params.toString()}`)
 }

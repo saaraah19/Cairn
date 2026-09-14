@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from './useAuth.js'
 import { GoogleSignInButton } from './GoogleSignInButton.jsx'
 import './authForms.css'
@@ -52,6 +53,9 @@ export function LoginForm({ onSwitchToRegister }) {
           value={fields.password}
           onChange={handleChange('password')}
         />
+        <p className="auth-forgot-password">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
       </div>
 
       <button className="auth-submit" type="submit" disabled={isSubmitting}>

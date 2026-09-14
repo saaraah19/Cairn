@@ -119,6 +119,12 @@ export async function createComment(userId, activityId, text, parentCommentId = 
   const comment = await Comment.create({ activityId, userId, text, parentCommentId })
   await comment.populate('userId', 'name username')
 
+  // Same denormalized-counter pattern as Kudos: Comment is the real
+  // source of truth, Activity.commentsCount is a display-speed cache kept
+  // in sync here and in deleteComment below. Counts replies too — it's a
+  // "conversation size" number, not a top-level-thread count.
+  await Activity.findByIdAndUpdate(activityId, { $inc: { commentsCount: 1 } })
+
   await createNotification({
     recipientUserId: notifyRecipientId,
     actorUserId: userId,
@@ -178,10 +184,18 @@ export async function deleteComment(userId, commentId) {
   // Deleting a top-level comment also deletes its replies — an orphaned
   // reply pointing at a deleted parent has no coherent place to render.
   // (A reply itself has no children, by construction, so this is a single
-  // extra step, not a recursive cascade.)
+  // extra step, not a recursive cascade.) The reply count is needed
+  // before the delete to decrement commentsCount correctly for both the
+  // comment itself AND every reply it took with it.
+  const deletedReplies = await Comment.countDocuments({ parentCommentId: commentId })
   await Comment.deleteMany({ parentCommentId: commentId })
 
   // Hard delete, consistent with 05_DATA_MODEL_AND_API_CONTRACT.md §59's
   // existing default — no soft-delete requirement exists for comments.
   await Comment.deleteOne({ _id: commentId })
+
+  await Activity.findOneAndUpdate(
+    { _id: comment.activityId, commentsCount: { $gte: 1 + deletedReplies } },
+    { $inc: { commentsCount: -(1 + deletedReplies) } }
+  )
 }

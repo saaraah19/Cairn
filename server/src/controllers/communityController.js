@@ -25,8 +25,8 @@ export async function getProfile(req, res, next) {
 
 export async function getFeed(req, res, next) {
   try {
-    const { scope, type, wilaya, cursor } = req.query
-    const result = await listPublicFeed({ scope, type, wilaya, cursor, viewerUserId: req.userId })
+    const { scope, type, wilaya, search, cursor } = req.query
+    const result = await listPublicFeed({ scope, type, wilaya, search, cursor, viewerUserId: req.userId })
     success(res, result)
   } catch (err) {
     next(err)

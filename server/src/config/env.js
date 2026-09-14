@@ -22,7 +22,21 @@ export const env = {
   cloudinaryCloudName: required('CLOUDINARY_CLOUD_NAME', ''),
   cloudinaryApiKey: required('CLOUDINARY_API_KEY', ''),
   cloudinaryApiSecret: required('CLOUDINARY_API_SECRET', ''),
+  // Forgot-password emails. Deliberately generic SMTP (not a specific
+  // vendor SDK) so this works with any provider that speaks SMTP —
+  // SendGrid, Mailgun, Resend, AWS SES, even a personal Gmail account for
+  // early testing — without locking into one vendor decision that wasn't
+  // this project's to make. If unset (e.g. local dev), mailService logs
+  // the reset link to the console instead of attempting to send —
+  // development keeps working without real credentials.
+  smtpHost: required('SMTP_HOST', ''),
+  smtpPort: Number(required('SMTP_PORT', 587)),
+  smtpUser: required('SMTP_USER', ''),
+  smtpPass: required('SMTP_PASS', ''),
+  smtpFrom: required('SMTP_FROM', 'Cairn <no-reply@cairn.app>'),
 }
+
+env.isEmailConfigured = Boolean(env.smtpHost && env.smtpUser && env.smtpPass)
 
 env.clientUrls = env.clientUrl.split(',').map((url) => url.trim()).filter(Boolean)
 

@@ -145,6 +145,7 @@ export async function toPublicActivityDTO(activity) {
     destination,
     coverPhoto,
     kudosCount: activity.kudosCount ?? 0,
+    commentsCount: activity.commentsCount ?? 0,
     createdAt: activity.createdAt,
     // No costDzd, gearItemIds, activityNumber, visibility.
   }
@@ -249,12 +250,47 @@ export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } 
 // edge case in §6, this never additionally checks the followed user's
 // current isPublicProfile — Activity.visibility is the only content-
 // visibility gate, exactly as Explore already treats everyone.
-export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, limit = 12, viewerUserId } = {}) {
+// Escapes regex special characters in free-text user input before it's
+// used to build a MongoDB RegExp filter — without this, a search/wilaya
+// value like "(" would throw an "Invalid regular expression" error, and
+// certain patterns could otherwise behave as a user-controlled regex
+// rather than a literal substring match.
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export async function listPublicFeed({
+  scope = 'explore',
+  type,
+  wilaya,
+  search,
+  cursor,
+  limit = 12,
+  viewerUserId,
+} = {}) {
   const filter = {}
   if (type) filter.type = type
-  if (wilaya) filter['location.wilaya'] = new RegExp(wilaya, 'i')
+  if (wilaya) filter['location.wilaya'] = new RegExp(escapeRegex(wilaya), 'i')
+
+  // Search matches the AUTHOR's name/username, not the activity's own
+  // name — the person asked for "search by name/username" specifically.
+  // Resolved to a set of matching userIds up front (a DB-level lookup,
+  // not fetch-then-filter), then combined with whatever scope-specific
+  // userId constraint (e.g. Following's followingIds) already applies.
+  // Not gated by isPublicProfile: a private-profile user's PUBLIC
+  // activities are already legitimately discoverable and already show
+  // that user's name via author attribution (§4's decoupling) — search
+  // surfaces nothing that browsing wouldn't already reveal.
+  let searchUserIds = null
+  const trimmedSearch = search?.trim()
+  if (trimmedSearch) {
+    const pattern = new RegExp(escapeRegex(trimmedSearch), 'i')
+    const matchedUsers = await User.find({ $or: [{ name: pattern }, { username: pattern }] }).select('_id')
+    searchUserIds = matchedUsers.map((u) => u._id)
+  }
 
   if (scope === 'explore') {
+    if (searchUserIds) filter.userId = { $in: searchUserIds }
     return paginatePublicActivities(filter, { cursor, limit })
   }
 
@@ -263,7 +299,14 @@ export async function listPublicFeed({ scope = 'explore', type, wilaya, cursor, 
       throw new ApiError(401, 'UNAUTHENTICATED', 'You must be logged in to view your following feed.')
     }
     const follows = await Follow.find({ followerId: viewerUserId }).select('followingId').lean()
-    const followingIds = follows.map((f) => f.followingId)
+    let followingIds = follows.map((f) => f.followingId)
+    if (searchUserIds) {
+      // Intersection: must be BOTH someone the viewer follows AND a
+      // search match — searching your following feed searches within it,
+      // it doesn't expand it to the whole platform.
+      const matchedSet = new Set(searchUserIds.map(String))
+      followingIds = followingIds.filter((id) => matchedSet.has(String(id)))
+    }
     filter.userId = { $in: followingIds }
     return paginatePublicActivities(filter, { cursor, limit })
   }

@@ -6,6 +6,8 @@ import { ThemeProvider } from './features/theme/ThemeProvider.jsx'
 import { useTheme } from './features/theme/useTheme.js'
 import { RegisterForm } from './features/auth/RegisterForm.jsx'
 import { LoginForm } from './features/auth/LoginForm.jsx'
+import { ForgotPasswordForm } from './features/auth/ForgotPasswordForm.jsx'
+import { ResetPasswordForm } from './features/auth/ResetPasswordForm.jsx'
 import { AuthLayout } from './layouts/AuthLayout.jsx'
 import { AppShell } from './layouts/AppShell.jsx'
 import { LoadingState } from './components/LoadingState.jsx'
@@ -71,11 +73,10 @@ function AuthGate({ mode }) {
 
   return (
     <AuthLayout>
-      {mode === 'login' ? (
-        <LoginForm onSwitchToRegister={() => navigate('/register')} />
-      ) : (
-        <RegisterForm onSwitchToLogin={() => navigate('/login')} />
-      )}
+      {mode === 'login' && <LoginForm onSwitchToRegister={() => navigate('/register')} />}
+      {mode === 'register' && <RegisterForm onSwitchToLogin={() => navigate('/login')} />}
+      {mode === 'forgot-password' && <ForgotPasswordForm onSwitchToLogin={() => navigate('/login')} />}
+      {mode === 'reset-password' && <ResetPasswordForm onSwitchToLogin={() => navigate('/login')} />}
       <BackendStatus />
     </AuthLayout>
   )
@@ -127,6 +128,8 @@ function AppContent() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthGate mode="login" />} />
         <Route path="/register" element={<AuthGate mode="register" />} />
+        <Route path="/forgot-password" element={<AuthGate mode="forgot-password" />} />
+        <Route path="/reset-password" element={<AuthGate mode="reset-password" />} />
         <Route element={<PublicPageLayout />}>
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/community/activities/:id" element={<PublicActivityDetail />} />

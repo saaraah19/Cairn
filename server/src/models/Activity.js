@@ -92,6 +92,12 @@ const activitySchema = new mongoose.Schema(
     // docs/08_COMMUNITY_PROPOSAL.md §4. Not settable via any client input —
     // only ever mutated by the kudos give/remove service functions.
     kudosCount: { type: Number, default: 0, min: 0 },
+    // Same denormalized-counter pattern as kudosCount — counts both
+    // top-level comments AND their replies (a "conversation size" number,
+    // not just "top-level thread count"). Comment/CommentLike remain the
+    // real source of truth; commentService keeps this in sync on
+    // create/delete, same as kudosService does for kudosCount.
+    commentsCount: { type: Number, default: 0, min: 0 },
 
     // Reserved for Phase 3's photo slice (Cloudinary) — not yet populated.
     coverPhotoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Photo', default: null },

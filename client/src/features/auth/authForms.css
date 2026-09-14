@@ -95,6 +95,21 @@
   font-size: inherit;
 }
 
+.auth-forgot-password {
+  margin: 0.4rem 0 0;
+  text-align: right;
+  font-size: 0.82rem;
+}
+
+.auth-forgot-password a {
+  color: var(--color-moss-deep);
+  text-decoration: none;
+}
+
+.auth-forgot-password a:hover {
+  text-decoration: underline;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;

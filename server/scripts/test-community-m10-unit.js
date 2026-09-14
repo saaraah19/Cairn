@@ -37,7 +37,10 @@ let notifications
 let commentIdCounter
 
 function resetFixtures() {
-  activities = [{ _id: 'act-public', userId: 'owner-1', visibility: 'public' }]
+  activities = [
+    { _id: 'act-public', userId: 'owner-1', visibility: 'public', commentsCount: 0 },
+    { _id: 'act-public-2', userId: 'owner-2', visibility: 'public', commentsCount: 0 },
+  ]
   comments = []
   likes = []
   notifications = []
@@ -50,6 +53,22 @@ function installMocks() {
       (a) => a._id === filter._id && (filter.visibility === undefined || a.visibility === filter.visibility)
     )
     return { select: () => Promise.resolve(found ? { ...found } : null) }
+  }
+
+  // commentService keeps Activity.commentsCount in sync on create/delete —
+  // not what M10 tests directly, so these just need to exist and behave
+  // reasonably without touching a real database.
+  Activity.findByIdAndUpdate = async (id, update) => {
+    const activity = activities.find((a) => a._id === id)
+    if (activity && update.$inc?.commentsCount) activity.commentsCount += update.$inc.commentsCount
+    return activity ? { ...activity } : null
+  }
+  Activity.findOneAndUpdate = async (filter, update) => {
+    const activity = activities.find((a) => a._id === filter._id)
+    if (!activity) return null
+    if (filter.commentsCount && activity.commentsCount < filter.commentsCount.$gte) return null
+    if (update.$inc?.commentsCount) activity.commentsCount += update.$inc.commentsCount
+    return { ...activity }
   }
 
   Comment.create = async (doc) => {
@@ -100,6 +119,8 @@ function installMocks() {
   Comment.deleteMany = async (filter) => {
     comments = comments.filter((c) => c.parentCommentId !== filter.parentCommentId)
   }
+
+  Comment.countDocuments = async (filter) => comments.filter((c) => c.parentCommentId === filter.parentCommentId).length
 
   Comment.findByIdAndUpdate = (id, update) => {
     const comment = comments.find((c) => c._id === id)
@@ -177,7 +198,6 @@ async function run() {
   }
 
   // Replying with a parentCommentId from a DIFFERENT activity is rejected.
-  activities.push({ _id: 'act-public-2', userId: 'owner-2', visibility: 'public' })
   try {
     await createComment('commenter-3', 'act-public-2', 'Nice!', topLevel.id)
     assert(false, "Replying using another activity's comment id throws")

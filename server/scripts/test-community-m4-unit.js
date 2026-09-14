@@ -43,6 +43,8 @@ function applyFilter(doc, filter) {
     const docValue = key.split('.').reduce((obj, k) => obj?.[k], doc)
     if (value instanceof RegExp) {
       if (!value.test(docValue ?? '')) return false
+    } else if (value && typeof value === 'object' && '$in' in value) {
+      if (!value.$in.map(String).includes(String(docValue))) return false
     } else if (value && typeof value === 'object' && ('$lt' in value)) {
       if (!(docValue < value.$lt)) return false
     } else if (value && typeof value === 'object' && !(value instanceof Date)) {
@@ -84,6 +86,16 @@ Activity.find = (filter) => {
 User.findById = () => ({
   select: () => ({ lean: () => Promise.resolve({ name: 'Fixture Author', username: 'fixtureauthor', isPublicProfile: true }) }),
 })
+
+// Search resolves author name/username via User.find — a small, separate
+// fixture from the Activity one above, keyed so exactly one user (u2,
+// "Sarah Ahmed" / "sarahhikes", owner of a2) is findable by search.
+const userFixture = [{ _id: 'u2', name: 'Sarah Ahmed', username: 'sarahhikes' }]
+User.find = (filter) => {
+  const pattern = filter.$or[0].name
+  const matched = userFixture.filter((u) => pattern.test(u.name) || pattern.test(u.username))
+  return { select: () => Promise.resolve(matched) }
+}
 
 async function run() {
   console.log('=== M4 — Explore Feed: mocked unit verification ===\n')
@@ -135,6 +147,23 @@ async function run() {
       rejectedUnknownScope = err.status === 422
     }
     assert(rejectedUnknownScope, 'A genuinely unknown scope value is rejected with 422')
+
+    // search matches the AUTHOR's name/username, not the activity's own
+    // name — searching "sarah" should return only a2 (owned by u2/Sarah
+    // Ahmed/sarahhikes), never any activity owned by someone else, even
+    // though several of them are also public and match no other filter.
+    const byName = await listPublicFeed({ search: 'sarah', limit: 10 })
+    assert(byName.activities.length === 1, 'Searching by author name returns exactly the one matching author\'s activity')
+    assert(byName.activities[0].name === 'Public Oran Camp', 'The search result is the activity actually owned by the matched author')
+
+    const byUsername = await listPublicFeed({ search: 'sarahhikes', limit: 10 })
+    assert(byUsername.activities.length === 1, 'Searching by username matches the same author as searching by name')
+
+    const byPartial = await listPublicFeed({ search: 'sara', limit: 10 })
+    assert(byPartial.activities.length === 1, 'A partial, case-insensitive search still matches')
+
+    const noMatch = await listPublicFeed({ search: 'nobody-has-this-name', limit: 10 })
+    assert(noMatch.activities.length === 0, 'A search matching no author returns an empty result, not an error or the full feed')
   } finally {
     Activity.find = originalFind
   }

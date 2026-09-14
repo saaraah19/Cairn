@@ -31,8 +31,8 @@ let commentIdCounter
 
 function resetFixtures() {
   activities = [
-    { _id: 'act-public', userId: 'owner-1', visibility: 'public' },
-    { _id: 'act-private', userId: 'owner-2', visibility: 'private' },
+    { _id: 'act-public', userId: 'owner-1', visibility: 'public', commentsCount: 0 },
+    { _id: 'act-private', userId: 'owner-2', visibility: 'private', commentsCount: 0 },
   ]
   comments = []
   notifications = []
@@ -49,6 +49,21 @@ function installMocks() {
   Activity.findById = (id) => {
     const found = activities.find((a) => a._id === id)
     return { select: () => ({ then: (resolve) => resolve(found ? { ...found } : null) }) }
+  }
+  // commentService now keeps Activity.commentsCount in sync on create/
+  // delete — not what M6 tests, so these just need to exist and behave
+  // reasonably without touching a real database.
+  Activity.findByIdAndUpdate = async (id, update) => {
+    const activity = activities.find((a) => a._id === id)
+    if (activity && update.$inc?.commentsCount) activity.commentsCount += update.$inc.commentsCount
+    return activity ? { ...activity } : null
+  }
+  Activity.findOneAndUpdate = async (filter, update) => {
+    const activity = activities.find((a) => a._id === filter._id)
+    if (!activity) return null
+    if (filter.commentsCount && activity.commentsCount < filter.commentsCount.$gte) return null
+    if (update.$inc?.commentsCount) activity.commentsCount += update.$inc.commentsCount
+    return { ...activity }
   }
 
   Comment.create = async (doc) => {
@@ -68,10 +83,17 @@ function installMocks() {
     comments.push(created)
     return created
   }
-  Comment.findById = async (id) => {
+  Comment.findById = (id) => {
     const found = comments.find((c) => c._id === id)
-    if (!found) return null
-    return { ...found, save: found.save, populate: async function () { return this } }
+    const result = found ? { ...found, save: found.save, populate: async function () { return this } } : null
+    // Dual-usage: some call sites (createComment's reply-parent lookup)
+    // chain .select(); others (updateComment/deleteComment) await the
+    // result directly as if it were a full document. Supporting both
+    // without a real Mongoose connection needs this shape.
+    return {
+      select: () => Promise.resolve(result),
+      then: (resolve) => resolve(result),
+    }
   }
   Comment.find = (filter) => {
     const matched = comments.filter(
@@ -95,10 +117,12 @@ function installMocks() {
     const idx = comments.findIndex((c) => c._id === filter._id)
     if (idx !== -1) comments.splice(idx, 1)
   }
-  // No reply fixtures exist in this file's tests (that's M10's job) — a
-  // real no-op is enough to keep deleteComment's cascade step from
-  // crashing on a missing mock.
-  Comment.deleteMany = async () => {}
+  // Now functional (previously a no-op, from before this file's new
+  // commentsCount-on-delete scenario actually created a real reply).
+  Comment.deleteMany = async (filter) => {
+    comments = comments.filter((c) => c.parentCommentId !== filter.parentCommentId)
+  }
+  Comment.countDocuments = async (filter) => comments.filter((c) => c.parentCommentId === filter.parentCommentId).length
 
   // toCommentDTO calls hasUserLikedComment for every comment/reply it
   // builds — likes aren't what M6 tests, so this just needs to exist and
@@ -193,6 +217,17 @@ async function run() {
   assertCanDeleteComment('author-x', fixtureComment, fixtureActivity) // should not throw
   assertCanDeleteComment('owner-x', fixtureComment, fixtureActivity) // should not throw
   assert(true, 'assertCanDeleteComment allows both the author and the activity owner without throwing')
+
+  // 10. Activity.commentsCount stays in sync with actual comment/reply
+  // create and delete, including the cascade-delete case.
+  resetFixtures()
+  const activityRef = activities.find((a) => a._id === 'act-public')
+  const parent = await createComment('commenter-1', 'act-public', 'Parent comment')
+  assert(activityRef.commentsCount === 1, 'commentsCount increments to 1 after a top-level comment is created')
+  await createComment('commenter-2', 'act-public', 'A reply', parent.id)
+  assert(activityRef.commentsCount === 2, 'commentsCount increments again for a reply (counts conversation size, not just top-level threads)')
+  await deleteComment('commenter-1', parent.id)
+  assert(activityRef.commentsCount === 0, 'Deleting a top-level comment decrements commentsCount by itself AND its cascade-deleted reply together')
 
   console.log(`\n${failures === 0 ? '✓ All M6 mocked unit checks passed.' : `✗ ${failures} check(s) failed.`}`)
   process.exit(failures === 0 ? 0 : 1)

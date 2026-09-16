@@ -4,6 +4,7 @@ import { PlannedActivity } from '../models/PlannedActivity.js'
 import { getCloudinary } from '../config/cloudinary.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.js'
+import { buildSearchFilter } from '../utils/searchUtils.js'
 
 export async function createDestination(userId, data) {
   return Destination.create({ ...data, userId })
@@ -14,7 +15,10 @@ export async function listDestinations(userId, query) {
 
   const filter = { userId }
   if (status) filter.status = status
-  if (search) filter.$text = { $search: search }
+  // Substring match, consistent with Activity/Gear/Community search — see
+  // searchUtils.js for why this replaced $text.
+  const searchFilter = buildSearchFilter(search, ['name', 'location.placeName', 'location.wilaya'])
+  if (searchFilter) Object.assign(filter, searchFilter)
 
   const skip = (page - 1) * limit
 

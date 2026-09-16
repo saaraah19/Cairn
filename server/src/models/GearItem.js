@@ -58,6 +58,8 @@ const gearItemSchema = new mongoose.Schema(
 )
 
 gearItemSchema.index({ userId: 1, category: 1 })
-gearItemSchema.index({ name: 'text', brand: 'text', model: 'text', notes: 'text' })
+// Search now uses substring RegExp matching, not $text (see
+// searchUtils.js) — a text index doesn't serve regex queries, so it was
+// removed rather than left as dead weight.
 
 export const GearItem = mongoose.model('GearItem', gearItemSchema)

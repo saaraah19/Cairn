@@ -6,7 +6,7 @@ All twelve V1 roadmap phases (`04_DEVELOPMENT_ROADMAP.md`) are implemented. The 
 
 **Verification honesty note** (per explicit product-owner instruction): this section distinguishes what was *actually confirmed* from what was *implemented but not explicitly re-confirmed after deployment*. Nothing below is marked verified unless the product owner said so directly.
 
-Last updated: 2026-09-13 (Forgot-password / reset-password flow implemented — resolves 07_POST_V1_ROADMAP.md §A2, the last remaining "Must Fix" item from the V1 checkpoint)
+Last updated: 2026-09-14 (Search consistency fix + gear/destination picker cap fix; two new Gear features logged to the roadmap, not yet implemented)
 
 ---
 
@@ -95,7 +95,7 @@ No confirmed production bugs as of this checkpoint. The product owner has not re
 - **Phase 11's visual/device review was never confirmed** — see above. Sidebar/bottom-bar handoff at 860px, dark mode across multiple pages, Pack My Bag's sticky weight bar, and statistics breakdown bars at narrow widths were the specific items flagged as worth checking.
 - **Gear picker caps at 50 items** in the Activity and Planned Activity forms — fine for a realistic personal closet, will silently make older gear unselectable past that count.
 - **Search inconsistency**: main search boxes use MongoDB `$text` (word-tokenized), while the Wilaya filter uses regex (true substring) — different matching behavior depending on which control you use.
-- **Home page has no dashboard** — shows only an empty-state CTA regardless of activity history, despite `01_PRODUCT_SPEC.md` §7 describing recent activity / upcoming plans / highlights. Flagged as a scope gap since Phase 5, never revisited.
+- ~~**Home page has no dashboard**~~ — **RESOLVED 2026-09-14.** See the dedicated checkpoint entry below.
 
 ### Technical Debt
 - **No automated test suite** — all testing across all twelve phases was manual (shell-script integration tests + live validation). Explicitly acceptable for V1 per the roadmap's own framing, but the natural next investment if the project continues.
@@ -339,6 +339,62 @@ The last remaining item from the original V1 "Must Fix" list (§A1, rate limitin
 - Re-ran all ten Community milestone test files plus this new one — **all still passing, no regressions**
 - `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 errors
 - `node --input-type=module -e "import('./src/app.js')..."` — confirms the app boots cleanly with the two new rate-limited routes mounted
+
+---
+
+## Files Changed at This Checkpoint (Home Dashboard — 01_PRODUCT_SPEC.md §7 / 03_UX_DESIGN_SPEC.md §9)
+
+The single highest-leverage screen flagged as a gap since Phase 5 of V1 — Home showed only an empty-state CTA regardless of activity history, despite always having been specified as a proper overview. No backend changes were needed at all: three existing endpoints (`GET /api/activities`, `GET /api/planned-activities`, `GET /api/statistics`) already returned everything the spec asks for, including cover photos (`Activity.coverPhotoId` was already populated by the existing list endpoint) — this was purely a matter of a frontend that was never built to consume them.
+
+Deliberately excluded, matching the spec's own explicit warning not to let Home become "an information dump" or "an analytics dashboard": no elevation/duration totals, no breakdowns by type/difficulty/year (all of that stays on the dedicated Statistics page); the highlights strip is capped at exactly the three numbers the spec's own example gives (activity count, highest peak, longest hike).
+
+**Modified:**
+- `client/src/pages/HomePage.jsx` — full rewrite. Fetches recent activities (6, for two sections at once — see below), upcoming planned activities (3), and statistics in parallel on mount. A brand-new account with no activities AND no plans still gets the original pure empty-state CTA unchanged — the dashboard only renders once there's something to show. Sections (primary actions, highlights, recent activity, upcoming, memories) each independently hide themselves when they have nothing to show, rather than rendering an empty section — "the most important information should be immediately understandable," not padded out with placeholders.
+- `client/src/pages/HomePage.css` — new file for the dashboard layout
+
+**Design decisions worth knowing about:**
+- **Recent activity" and "Memories" share one fetch.** Fetches 6 recent activities once; the first 3 become activity cards, and whichever of the 6 have a cover photo become the memory photo strip. Avoids a second, heavier fetch just to re-derive photos that were already sitting in the first response — the "recent activity" endpoint already populates `coverPhotoId`.
+- **"Highest peak" is NOT formatted with `formatElevation`** (which prepends a `+`, meant for elevation *gain* on activity cards) — an altitude isn't a gain, and "+1,230 m" would misleadingly read as "gained 1,230 m of elevation" rather than "reached 1,230 m." Formatted as a plain `{value} m` instead.
+- **"Prepare my bag"** links to the soonest upcoming planned activity's pack page when one exists, or to "plan a new activity" when there isn't one yet — there's no meaningful destination for that button with zero plans.
+- Reuses the existing `ActivityCard`/`PlannedActivityCard` components as-is (no new card variants) — Home should feel like a preview of the same objects `/outdoors` shows, not a parallel visual language.
+
+**Verification performed this checkpoint:**
+- `npm run build` (client) and `npx oxlint` (full `client/src/` tree) — clean, 0 new warnings or errors
+- No backend changes, so no backend test regressions possible — the existing 11-file backend suite continues to pass unaffected
+- Not yet manually clicked through on a live server (no live account data available in this sandbox) — this is a frontend-only change built entirely from careful reading of the existing API response shapes (`activityController.js`/`plannedActivityController.js`/`statisticsService.js`), so **the product owner should do a real click-through** (all three states: no data, some data, and each section individually populated/empty) before considering this fully verified
+
+---
+
+## Files Changed at This Checkpoint (Search Consistency + Gear/Destination Picker Cap)
+
+Two small, related fixes, both flagged earlier as known issues and fixed together since they touched adjacent code.
+
+**1. Search consistency ($text vs regex).** `activityService.js`, `destinationService.js`, and `gearService.js` all used MongoDB's `$text` operator for their `search` param (whole-word/stemmed matching, requires a text index) while `activityService.js`'s own `wilaya` filter on the same list used a plain substring RegExp — genuinely inconsistent behavior for what looks like the same kind of search box (e.g. searching "Blan" matched via wilaya but not via search). Standardized on substring RegExp everywhere via a new shared `server/src/utils/searchUtils.js` (`escapeRegex`, `buildSearchFilter`) — also used to de-duplicate the near-identical logic that already existed in `communityService.js`'s Explore search (added last session). Removed the now-unused text indexes from `Activity`, `Destination`, and `GearItem` — **these will still physically exist in a live deployed MongoDB until manually dropped or `syncIndexes()` is run; Mongoose doesn't auto-remove indexes deleted from the schema.**
+
+**2. Gear/destination picker's silent 50-item cap.** The activity-logging form's gear and destination pickers, `PackMyBagPage`'s gear picker, and `PlannedActivityForm`'s destination picker all fetch their full option list in a single request with no pagination UI inside the picker itself — but the backend validators capped `limit` at 50, so anyone with more than 50 gear items or saved destinations would silently lose the ability to select/pack their newer ones, with no indication anything was missing. Raised the cap to 200 (comfortably covers even a thorough gear closet) in both `gearValidators.js` and `destinationValidators.js`, and updated all four picker fetch calls to request the new limit. Separately, `ActivityForm.jsx`'s gear picker had **no search or category filter at all** — a flat checkbox grid — despite `03_UX_DESIGN_SPEC.md` §21 always specifying "Search → Filter by category → Select items" for gear selection; `PackMyBagPage.jsx`'s picker already had this right. Brought `ActivityForm.jsx` in line with the same pattern (client-side filtering, since even 200 items is trivial to filter in the browser — no need for server round-trips per keystroke on what's fundamentally a small personal list).
+
+**3. Two new Gear features logged to the roadmap, NOT implemented** (explicit product-owner instruction: log for later, current milestone doesn't cover them) — see `07_POST_V1_ROADMAP.md` §C for full detail: **Gear by store + spend-per-store** (filter the Gear Closet by store, see item count + total spent), and **"Gear I Need to Buy"** — a wishlist distinct from the Gear Closet, where each wanted item can have multiple comparable purchase options, and marking an option "Purchased" converts it into a real GearItem. The wishlist item is flagged in the roadmap as needing its own new-entity design decision before implementation (likely a new model with an embedded `options` array, not a GearItem field addition) — a genuine product/architecture decision, not a small addition, per `Claude.md` §4's own threshold for what needs explicit approval before implementing.
+
+**New:**
+- `server/src/utils/searchUtils.js`
+- `server/scripts/test-search-utils-unit.js` — mocked, run — **25/25 passing**
+
+**Modified:**
+- `server/src/services/activityService.js`, `destinationService.js`, `gearService.js` — `$text` → `buildSearchFilter`
+- `server/src/services/communityService.js` — refactored to use the shared `searchUtils.js` instead of its own local duplicate of the same logic
+- `server/src/models/Activity.js`, `Destination.js`, `GearItem.js` — removed now-unused text indexes
+- `server/src/validators/gearValidators.js`, `destinationValidators.js` — `limit` max 50 → 200
+- `client/src/features/activities/ActivityForm.jsx` — gear/destination fetch limits raised to 200; added search + category filter to the gear picker (new `gearSearch`/`gearCategory` state, `filteredGearOptions` memo, `CATEGORY_OPTIONS`)
+- `client/src/features/activities/ActivityForm.css` — `+.gear-toolbar` styles
+- `client/src/features/plannedActivities/PackMyBagPage.jsx` — gear fetch limit raised to 200 (this picker already had search/category filtering — only the underlying fetch was capped)
+- `client/src/features/plannedActivities/PlannedActivityForm.jsx` — destination fetch limit raised to 200
+- `docs/07_POST_V1_ROADMAP.md` — §A2 marked resolved (was stale), gear-picker-pagination item marked resolved, two new Gear features added under §C
+
+**Verification performed this checkpoint:**
+- `node scripts/test-search-utils-unit.js` — 25/25 passing, covering: every regex special character is safely escaped rather than crashing or being interpreted as a pattern; empty/whitespace/undefined search input returns `null` so callers can skip cleanly; matching is case-insensitive and correctly scoped to the fields requested
+- Re-ran all eleven prior test files (ten Community + forgot-password) — **all still passing, no regressions**, including `test-community-m4-unit.js`, which exercises `communityService.js`'s search behavior through the exact code path that got refactored to use the new shared utility
+- `node --input-type=module -e "import('./src/app.js')..."` — confirms the app boots cleanly
+- `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 errors
 
 ---
 

@@ -29,7 +29,13 @@ export const updateDestinationSchema = z.object(baseFields).partial()
 
 export const listDestinationsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+  // 200, not 50 — same reasoning as gearValidators.js: the activity-
+  // logging form's destination picker fetches once (a <select> dropdown,
+  // no pagination UI inside it), so a cap of 50 meant anyone with more
+  // saved destinations than that couldn't select their newer ones when
+  // logging an activity. The main Destinations page still paginates
+  // normally with the smaller default below.
+  limit: z.coerce.number().int().min(1).max(200).optional().default(20),
   search: z.string().trim().max(150).optional(),
   status: z.enum(['wishlist', 'planned', 'visited']).optional(),
 })

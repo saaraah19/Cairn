@@ -3,6 +3,7 @@ import { getNextSequenceValue } from '../models/Counter.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { deleteAllPhotosForActivity } from './photoService.js'
 import { assertGroupOwnership, assertGearOwnership, assertDestinationOwnership } from '../utils/ownershipChecks.js'
+import { escapeRegex, buildSearchFilter } from '../utils/searchUtils.js'
 
 export async function createActivity(userId, data) {
   await assertGroupOwnership(userId, data.social?.groupId)
@@ -24,14 +25,17 @@ export async function listActivities(userId, query) {
   const filter = { userId }
   if (type) filter.type = type
   if (difficulty) filter['trail.difficulty'] = difficulty
-  if (wilaya) filter['location.wilaya'] = new RegExp(wilaya, 'i')
+  if (wilaya) filter['location.wilaya'] = new RegExp(escapeRegex(wilaya), 'i')
   if (groupId) filter['social.groupId'] = groupId
   if (dateFrom || dateTo) {
     filter.date = {}
     if (dateFrom) filter.date.$gte = new Date(dateFrom)
     if (dateTo) filter.date.$lte = new Date(dateTo)
   }
-  if (search) filter.$text = { $search: search }
+  // Same substring-matching approach as the wilaya filter just above —
+  // see searchUtils.js for why this replaced $text.
+  const searchFilter = buildSearchFilter(search, ['name', 'location.placeName', 'location.wilaya', 'review.notes'])
+  if (searchFilter) Object.assign(filter, searchFilter)
 
   const sortMap = {
     newest: { date: -1 },

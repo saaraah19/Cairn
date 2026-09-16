@@ -114,7 +114,10 @@ activitySchema.index({ userId: 1, 'social.groupId': 1 })
 // docs/08_COMMUNITY_PROPOSAL.md §9). Does not replace the (userId, date)
 // index above, which serves the private "my activities" list.
 activitySchema.index({ visibility: 1, date: -1 })
-// Lightweight partial-match search across name/place/wilaya/notes.
-activitySchema.index({ name: 'text', 'location.placeName': 'text', 'location.wilaya': 'text', 'review.notes': 'text' })
+// A MongoDB text index doesn't serve search anymore — listActivities now
+// uses substring RegExp matching instead (see searchUtils.js), for
+// consistency with the wilaya filter on this same list, which was never a
+// $text query to begin with. A text index isn't useful for regex
+// matching, so it was removed rather than left as dead weight.
 
 export const Activity = mongoose.model('Activity', activitySchema)

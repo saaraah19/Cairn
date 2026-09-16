@@ -30,7 +30,7 @@ export function PackMyBagPage() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([getPlannedActivityRequest(id), listGearRequest({ limit: 50 })])
+    Promise.all([getPlannedActivityRequest(id), listGearRequest({ limit: 200 })])
       .then(([planData, gearData]) => {
         if (cancelled) return
         setPlanName(planData.plannedActivity.name)

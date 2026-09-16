@@ -3,6 +3,7 @@ import { Activity } from '../models/Activity.js'
 import { getCloudinary } from '../config/cloudinary.js'
 import { ApiError } from '../utils/apiResponse.js'
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.js'
+import { buildSearchFilter } from '../utils/searchUtils.js'
 
 export async function createGear(userId, data) {
   return GearItem.create({ ...data, userId })
@@ -13,7 +14,10 @@ export async function listGear(userId, query) {
 
   const filter = { userId }
   if (category) filter.category = category
-  if (search) filter.$text = { $search: search }
+  // Substring match, consistent with Activity/Destination/Community
+  // search — see searchUtils.js for why this replaced $text.
+  const searchFilter = buildSearchFilter(search, ['name', 'brand', 'model', 'notes'])
+  if (searchFilter) Object.assign(filter, searchFilter)
 
   const skip = (page - 1) * limit
 

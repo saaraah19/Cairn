@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   createActivityRequest,
@@ -15,6 +15,11 @@ import { CATEGORY_LABELS } from '../gear/formatters.js'
 import './ActivityForm.css'
 import '../../pages/pages.css'
 import '../auth/authForms.css'
+
+const CATEGORY_OPTIONS = [
+  { value: '', label: 'All categories' },
+  ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+]
 
 const emptyForm = {
   name: '',
@@ -83,6 +88,8 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
   const [groups, setGroups] = useState([])
   const [companionSuggestions, setCompanionSuggestions] = useState([])
   const [gearOptions, setGearOptions] = useState([])
+  const [gearSearch, setGearSearch] = useState('')
+  const [gearCategory, setGearCategory] = useState('')
   const [destinations, setDestinations] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -90,8 +97,8 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
   useEffect(() => {
     listGroupsRequest().then((d) => setGroups(d.groups)).catch(() => {})
     listCompanionsRequest().then((d) => setCompanionSuggestions(d.companions)).catch(() => {})
-    listGearRequest({ limit: 50 }).then((d) => setGearOptions(d.gear)).catch(() => {})
-    listDestinationsRequest({ limit: 50 }).then((d) => setDestinations(d.destinations)).catch(() => {})
+    listGearRequest({ limit: 200 }).then((d) => setGearOptions(d.gear)).catch(() => {})
+    listDestinationsRequest({ limit: 200 }).then((d) => setDestinations(d.destinations)).catch(() => {})
   }, [])
 
   function set(field) {
@@ -106,6 +113,20 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
         : [...f.gearItemIds, gearId],
     }))
   }
+
+  // Client-side filtering, same approach as PackMyBagPage's picker — the
+  // full closet (now fetched up to 200 items, see the useEffect above) is
+  // small enough that filtering in the browser is instant, and matches
+  // docs/03_UX_DESIGN_SPEC.md §21's explicit "Search -> Filter by
+  // category -> Select items" flow, which this picker never actually had
+  // until now.
+  const filteredGearOptions = useMemo(() => {
+    return gearOptions.filter((g) => {
+      if (gearCategory && g.category !== gearCategory) return false
+      if (gearSearch && !g.name.toLowerCase().includes(gearSearch.toLowerCase())) return false
+      return true
+    })
+  }, [gearOptions, gearSearch, gearCategory])
 
   async function resolveGroupId() {
     const name = form.groupName.trim()
@@ -345,19 +366,47 @@ export function ActivityForm({ activity, activityId, prefill, plannedActivityId 
             No gear in your closet yet — add some from Gear to select it here.
           </p>
         ) : (
-          <div className="gear-checkbox-grid">
-            {gearOptions.map((g) => (
-              <label key={g._id} className="gear-checkbox">
-                <input
-                  type="checkbox"
-                  checked={form.gearItemIds.includes(g._id)}
-                  onChange={() => toggleGear(g._id)}
-                />
-                <span>{g.name}</span>
-                <span className="gear-checkbox-category">{CATEGORY_LABELS[g.category]}</span>
-              </label>
-            ))}
-          </div>
+          <>
+            <div className="gear-toolbar">
+              <input
+                type="search"
+                placeholder="Search your gear…"
+                aria-label="Search your gear"
+                value={gearSearch}
+                onChange={(e) => setGearSearch(e.target.value)}
+              />
+              <select
+                aria-label="Filter by category"
+                value={gearCategory}
+                onChange={(e) => setGearCategory(e.target.value)}
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {filteredGearOptions.length === 0 ? (
+              <p style={{ color: 'var(--color-mist)', fontSize: '0.85rem' }}>
+                No gear matches that search.
+              </p>
+            ) : (
+              <div className="gear-checkbox-grid">
+                {filteredGearOptions.map((g) => (
+                  <label key={g._id} className="gear-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={form.gearItemIds.includes(g._id)}
+                      onChange={() => toggleGear(g._id)}
+                    />
+                    <span>{g.name}</span>
+                    <span className="gear-checkbox-category">{CATEGORY_LABELS[g.category]}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </section>
 

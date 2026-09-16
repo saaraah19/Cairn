@@ -54,7 +54,7 @@ export function PlannedActivityForm({ plan, planId }) {
   useEffect(() => {
     listGroupsRequest().then((d) => setGroups(d.groups)).catch(() => {})
     listCompanionsRequest().then((d) => setCompanionSuggestions(d.companions)).catch(() => {})
-    listDestinationsRequest({ limit: 50 }).then((d) => setDestinations(d.destinations)).catch(() => {})
+    listDestinationsRequest({ limit: 200 }).then((d) => setDestinations(d.destinations)).catch(() => {})
   }, [])
 
   function set(field) {

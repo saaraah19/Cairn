@@ -8,6 +8,7 @@ import { getPublicStatistics } from './communityStatisticsService.js'
 import { hasUserGivenKudos } from './kudosService.js'
 import { isFollowing } from './followService.js'
 import { Follow } from '../models/Follow.js'
+import { escapeRegex, buildSearchFilter } from '../utils/searchUtils.js'
 
 // Whitelist-only public DTO builders — see docs/08_COMMUNITY_PROPOSAL.md §2
 // (Activity field matrix) and §3 (Profile field matrix). Every field below
@@ -250,14 +251,6 @@ export async function listPublicActivitiesByUser(userId, { cursor, limit = 12 } 
 // edge case in §6, this never additionally checks the followed user's
 // current isPublicProfile — Activity.visibility is the only content-
 // visibility gate, exactly as Explore already treats everyone.
-// Escapes regex special characters in free-text user input before it's
-// used to build a MongoDB RegExp filter — without this, a search/wilaya
-// value like "(" would throw an "Invalid regular expression" error, and
-// certain patterns could otherwise behave as a user-controlled regex
-// rather than a literal substring match.
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
 
 export async function listPublicFeed({
   scope = 'explore',
@@ -282,10 +275,9 @@ export async function listPublicFeed({
   // that user's name via author attribution (§4's decoupling) — search
   // surfaces nothing that browsing wouldn't already reveal.
   let searchUserIds = null
-  const trimmedSearch = search?.trim()
-  if (trimmedSearch) {
-    const pattern = new RegExp(escapeRegex(trimmedSearch), 'i')
-    const matchedUsers = await User.find({ $or: [{ name: pattern }, { username: pattern }] }).select('_id')
+  const nameSearchFilter = buildSearchFilter(search, ['name', 'username'])
+  if (nameSearchFilter) {
+    const matchedUsers = await User.find(nameSearchFilter).select('_id')
     searchUserIds = matchedUsers.map((u) => u._id)
   }
 

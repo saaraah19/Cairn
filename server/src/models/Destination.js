@@ -42,6 +42,8 @@ const destinationSchema = new mongoose.Schema(
 )
 
 destinationSchema.index({ userId: 1, status: 1 })
-destinationSchema.index({ name: 'text', 'location.placeName': 'text', 'location.wilaya': 'text' })
+// Search now uses substring RegExp matching, not $text (see
+// searchUtils.js) — a text index doesn't serve regex queries, so it was
+// removed rather than left as dead weight.
 
 export const Destination = mongoose.model('Destination', destinationSchema)

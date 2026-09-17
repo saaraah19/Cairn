@@ -49,4 +49,5 @@ export const listGearQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional().default(20),
   search: z.string().trim().max(150).optional(),
   category: z.enum(CATEGORIES).optional(),
+  store: z.string().trim().max(150).optional(),
 })

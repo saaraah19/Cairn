@@ -6,7 +6,7 @@ All twelve V1 roadmap phases (`04_DEVELOPMENT_ROADMAP.md`) are implemented. The 
 
 **Verification honesty note** (per explicit product-owner instruction): this section distinguishes what was *actually confirmed* from what was *implemented but not explicitly re-confirmed after deployment*. Nothing below is marked verified unless the product owner said so directly.
 
-Last updated: 2026-09-14 (Search consistency fix + gear/destination picker cap fix; two new Gear features logged to the roadmap, not yet implemented)
+Last updated: 2026-09-14 (Gear by Store + "Gear I Need to Buy" wishlist implemented — the two Gear features logged earlier this same day are now both built)
 
 ---
 
@@ -395,6 +395,49 @@ Two small, related fixes, both flagged earlier as known issues and fixed togethe
 - Re-ran all eleven prior test files (ten Community + forgot-password) — **all still passing, no regressions**, including `test-community-m4-unit.js`, which exercises `communityService.js`'s search behavior through the exact code path that got refactored to use the new shared utility
 - `node --input-type=module -e "import('./src/app.js')..."` — confirms the app boots cleanly
 - `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 errors
+
+---
+
+## Files Changed at This Checkpoint (Gear by Store + "Gear I Need to Buy" Wishlist)
+
+Both approved by the product owner the same day they were logged (see the previous checkpoint entry) — implemented immediately after.
+
+**1. Gear by store + spend-per-store.** `GearItem.store` already existed as free text; this made it a first-class filter. `listGearStores(userId)` groups the user's gear by store, case-INsensitively (so "Decathlon" and "decathlon" count as one store, not two — the displayed name is whichever casing was seen first), computing item count and total spent per store. Deliberately implemented as a fetch + JS reduction (matching `statisticsService.js`/`communityStatisticsService.js`'s existing convention) rather than introducing this project's first MongoDB aggregation pipeline — at personal-gear-closet scale, the dataset is small enough that this offers no real benefit, and it avoids adding a new pattern to a codebase that has consistently avoided them. The main gear list's own `store` filter matches case-insensitively but as an EXACT match, not substring — picking "Decathlon" from the stores dropdown should never also surface a hypothetical "Decathlon Outlet" as if it were the same store.
+
+**2. "Gear I Need to Buy."** A genuinely new model, `GearWishlistItem`, with options embedded as subdocuments (no independent lifecycle outside their parent, per `02_TECHNICAL_ARCHITECTURE.md` §38's embedding rule). Mirrors `PlannedActivity`'s own `status`/`completedActivityId` pattern for keeping the original record after conversion (the wishlist item is NOT deleted when an option is purchased — it stays as a record of the decision, same as a completed PlannedActivity remains visible rather than vanishing). **One deliberate departure from that pattern**, called out explicitly in code comments: `PlannedActivity`→`Activity` completion requires the client to create the Activity themselves via the normal form and then merely link it; `purchaseOption` instead atomically creates the GearItem itself in one action, because the product owner was explicit that marking an option Purchased should "transformer/ajouter directement" (transform/add it directly) — a one-click conversion, not a manual two-step flow. The resulting GearItem's **name comes from the purchased OPTION** (e.g. "SIMOND MT500 Blue"), never the wishlist item's generic name (e.g. "Sleeping Mat") — using the generic name would make multiple purchases over time indistinguishable in the Gear Closet, which GearItem's own design already guards against (`05_DATA_MODEL_AND_API_CONTRACT.md` §30). An already-purchased wishlist item cannot be purchased a second time (409) — a wishlist item converts into exactly one GearItem. Deleting an option, or the whole wishlist item, never touches a GearItem a previous purchase already produced (mirrors the existing rule that deleting an Activity never deletes the GearItems it referenced, §40).
+
+Reachable as a new "Need to Buy" tab on the Gear page, alongside the existing Gear Closet — mirrors `MyOutdoorsPage.jsx`'s existing Activities/Planned/Destinations tab pattern exactly, rather than inventing a new navigation concept.
+
+**New (server):**
+- `server/src/models/GearWishlistItem.js`
+- `server/src/services/gearWishlistService.js`
+- `server/src/validators/gearWishlistValidators.js`
+- `server/src/controllers/gearWishlistController.js`
+- `server/src/routes/gearWishlist.routes.js` (mounted at `/api/gear-wishlist`, unconditionally `authenticate`-gated — entirely personal data, no public-read path)
+- `server/scripts/test-gear-stores-unit.js` — mocked, run — **7/7 passing** (fixture chosen so the Decathlon group lands on the product owner's own example: 4 items, 53,000 DA)
+- `server/scripts/test-gear-wishlist-unit.js` — mocked, run — **23/23 passing**
+- `server/scripts/test-gear-store-and-wishlist.sh` — live-server, **not yet run**
+
+**Modified:**
+- `server/src/validators/gearValidators.js` — `+store` on `listGearQuerySchema`
+- `server/src/services/gearService.js` — `+listGearStores`, `store` filter on `listGear`
+- `server/src/controllers/gearController.js`, `server/src/routes/gear.routes.js` — `+GET /api/gear/stores` (registered before `/:id`, or Express would treat "stores" as an id)
+- `server/src/app.js` — mounted `/api/gear-wishlist`
+- `client/src/features/gear/api.js` — `+listGearStoresRequest`
+- `client/src/features/gear/GearList.jsx`/`GearList.css` — store filter dropdown + summary line
+- `client/src/pages/GearPage.jsx`/`GearPage.css` — `+"Need to Buy"` tab
+
+**New (client):**
+- `client/src/features/gearWishlist/` — `api.js`, `GearWishlistList.jsx`, `GearWishlistItemCard.jsx`, `GearWishlistItemForm.jsx`, `GearWishlistCreatePage.jsx`, `GearWishlistEditPage.jsx`, `GearWishlistItemDetail.jsx`, `OptionForm.jsx`, `GearWishlist.css`
+- `client/src/App.jsx` — `+/gear/wishlist/new`, `+/gear/wishlist/:id/edit`, `+/gear/wishlist/:id` (all registered before `/gear/:id`, same ordering reason as the backend route)
+
+**Verification performed this checkpoint:**
+- `node scripts/test-gear-stores-unit.js` — 7/7 passing: case-insensitive grouping, an item with no store excluded (not grouped as an empty-string store), a null price contributes 0 not NaN, alphabetical sort, another user's gear never leaks in
+- `node scripts/test-gear-wishlist-unit.js` — 23/23 passing: multiple options per item, the purchased GearItem's fields come from the OPTION not the wishlist item, the wishlist item survives its own purchase (not deleted), a second purchase attempt on the same item is rejected (409) with no second GearItem created, deleting an option or the whole wishlist item never deletes a GearItem a prior purchase produced, ownership enforced as 404 (not 403), and both wishlist-item-level and individual-option-level field updates work independently
+- Re-ran all twelve prior test files — **all still passing, no regressions**
+- `node --input-type=module -e "import('./src/app.js')..."` — confirms the app boots cleanly with both new routes mounted
+- `npm run build` (client) and `npx oxlint` (full `client/src/` and `server/src/` trees) — clean, 0 errors (one pre-existing benign lint warning unrelated to this work, already noted in earlier checkpoints)
+- `server/scripts/test-gear-store-and-wishlist.sh` was written but **not run** — no live MongoDB in this environment, same limitation as every other milestone's `.sh` script; this one specifically exercises the exact example from the original request (4 Decathlon items, 53,000 DA) end-to-end against a real server
 
 ---
 

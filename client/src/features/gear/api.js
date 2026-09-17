@@ -13,6 +13,10 @@ export function listGearRequest(params) {
   return apiRequest(`/api/gear${toQueryString(params)}`)
 }
 
+export function listGearStoresRequest() {
+  return apiRequest('/api/gear/stores')
+}
+
 export function getGearRequest(id) {
   return apiRequest(`/api/gear/${id}`)
 }

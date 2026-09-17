@@ -1,0 +1,9 @@
+.gear-store-summary {
+  margin: 0 0 var(--space-md);
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  font-size: 0.9rem;
+  color: var(--color-ink);
+}

@@ -1,6 +1,7 @@
 import {
   createGear,
   listGear,
+  listGearStores,
   getOwnedGear,
   updateGear,
   deleteGear,
@@ -23,6 +24,15 @@ export async function list(req, res, next) {
   try {
     const { items, pagination } = await listGear(req.userId, req.validatedQuery)
     success(res, { gear: items, pagination })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function listStores(req, res, next) {
+  try {
+    const stores = await listGearStores(req.userId)
+    success(res, { stores })
   } catch (err) {
     next(err)
   }

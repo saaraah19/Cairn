@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listGearRequest } from './api.js'
+import { listGearRequest, listGearStoresRequest } from './api.js'
 import { GearCard } from './GearCard.jsx'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { EmptyState } from '../../components/EmptyState.jsx'
-import { CATEGORY_LABELS } from './formatters.js'
+import { CATEGORY_LABELS, formatPrice } from './formatters.js'
 import '../activities/ActivitiesList.css'
 import '../../pages/pages.css'
+import './GearList.css'
 
 const CATEGORY_OPTIONS = [
   { value: '', label: 'All categories' },
@@ -19,15 +20,17 @@ export function GearList() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
+  const [store, setStore] = useState('')
+  const [stores, setStores] = useState([])
   const [error, setError] = useState(null)
   const [loadedKey, setLoadedKey] = useState(null)
 
-  const requestKey = JSON.stringify({ page, search, category })
+  const requestKey = JSON.stringify({ page, search, category, store })
   const isLoading = loadedKey !== requestKey && !error
 
   useEffect(() => {
     let cancelled = false
-    listGearRequest({ page, search, category })
+    listGearRequest({ page, search, category, store })
       .then((data) => {
         if (cancelled) return
         setItems(data.gear)
@@ -43,7 +46,18 @@ export function GearList() {
     return () => {
       cancelled = true
     }
-  }, [page, search, category, requestKey])
+  }, [page, search, category, store, requestKey])
+
+  // Fetched once — the store dropdown's own options don't change based on
+  // whichever store is currently selected, and re-fetching it on every
+  // filter change would be pointless (product-owner request, 2026-09-14 —
+  // see 07_POST_V1_ROADMAP.md §C: "know where I buy my gear and how much
+  // I've spent at each store").
+  useEffect(() => {
+    listGearStoresRequest()
+      .then((data) => setStores(data.stores))
+      .catch(() => {})
+  }, [])
 
   function handleFilterChange(setter) {
     return (value) => {
@@ -51,6 +65,8 @@ export function GearList() {
       setPage(1)
     }
   }
+
+  const selectedStoreSummary = store ? stores.find((s) => s.store.toLowerCase() === store.toLowerCase()) : null
 
   return (
     <div>
@@ -74,11 +90,28 @@ export function GearList() {
               </option>
             ))}
           </select>
+          {stores.length > 0 && (
+            <select aria-label="Filter by store" value={store} onChange={(e) => handleFilterChange(setStore)(e.target.value)}>
+              <option value="">All stores</option>
+              {stores.map((s) => (
+                <option key={s.store} value={s.store}>
+                  {s.store}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <Link to="/gear/new" className="primary-action" style={{ textDecoration: 'none' }}>
           Add gear
         </Link>
       </div>
+
+      {selectedStoreSummary && (
+        <p className="gear-store-summary">
+          <strong>{selectedStoreSummary.store}</strong> — {selectedStoreSummary.itemCount}{' '}
+          {selectedStoreSummary.itemCount === 1 ? 'item' : 'items'} — {formatPrice(selectedStoreSummary.totalSpentDzd)} spent
+        </p>
+      )}
 
       {isLoading && <LoadingState label="Loading your gear…" />}
 

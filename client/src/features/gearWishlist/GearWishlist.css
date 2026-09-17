@@ -1,0 +1,167 @@
+/* Card (list view) */
+
+.wishlist-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.wishlist-card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.wishlist-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.wishlist-card h3 {
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.wishlist-purchased-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  color: white;
+  background: var(--color-moss);
+  white-space: nowrap;
+}
+
+.wishlist-card-meta {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-mist);
+}
+
+.wishlist-card-options {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-mist);
+}
+
+.wishlist-show-purchased {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--color-mist);
+}
+
+/* Detail view */
+
+.wishlist-purchased-banner {
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: var(--border-hairline);
+  margin-bottom: var(--space-md);
+  font-size: 0.9rem;
+}
+
+.icon-button.primary {
+  background: var(--color-moss);
+  color: white;
+  border: none;
+}
+
+/* Options list */
+
+.option-list {
+  list-style: none;
+  margin: 0 0 var(--space-md);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.option-row {
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.option-row.purchased {
+  border-color: var(--color-moss);
+}
+
+.option-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.option-row-name {
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.option-row-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-mist);
+}
+
+.option-row-notes {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+}
+
+.option-row-actions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+/* Option form (add/edit) */
+
+.option-form {
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.option-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-sm);
+}
+
+.option-form input,
+.option-form textarea {
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-input);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.option-form-actions {
+  display: flex;
+  gap: var(--space-sm);
+}

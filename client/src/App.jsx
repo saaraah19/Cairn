@@ -28,6 +28,9 @@ import { ActivityDetail } from './features/activities/ActivityDetail.jsx'
 import { GearCreatePage } from './features/gear/GearCreatePage.jsx'
 import { GearEditPage } from './features/gear/GearEditPage.jsx'
 import { GearDetail } from './features/gear/GearDetail.jsx'
+import { GearWishlistCreatePage } from './features/gearWishlist/GearWishlistCreatePage.jsx'
+import { GearWishlistEditPage } from './features/gearWishlist/GearWishlistEditPage.jsx'
+import { GearWishlistItemDetail } from './features/gearWishlist/GearWishlistItemDetail.jsx'
 import { PlannedActivityCreatePage } from './features/plannedActivities/PlannedActivityCreatePage.jsx'
 import { PlannedActivityEditPage } from './features/plannedActivities/PlannedActivityEditPage.jsx'
 import { PlannedActivityDetail } from './features/plannedActivities/PlannedActivityDetail.jsx'
@@ -157,6 +160,11 @@ function AppContent() {
         <Route path="/outdoors/:id" element={<ActivityDetail />} />
         <Route path="/gear" element={<GearPage />} />
         <Route path="/gear/new" element={<GearCreatePage />} />
+        {/* Must be registered BEFORE '/gear/:id' — otherwise "wishlist"
+            would be captured as an :id value. */}
+        <Route path="/gear/wishlist/new" element={<GearWishlistCreatePage />} />
+        <Route path="/gear/wishlist/:id/edit" element={<GearWishlistEditPage />} />
+        <Route path="/gear/wishlist/:id" element={<GearWishlistItemDetail />} />
         <Route path="/gear/:id/edit" element={<GearEditPage />} />
         <Route path="/gear/:id" element={<GearDetail />} />
         <Route path="/statistics" element={<StatisticsPage />} />

@@ -7,7 +7,7 @@ Produced at the V1 completion checkpoint (2026-09-05); revised 2026-09-09 once t
 ## A. Must Fix
 
 - **A1 — Rate limiting on auth endpoints.** ~~Named as a minimum V1 security requirement (`02_TECHNICAL_ARCHITECTURE.md` §35) and never implemented across all twelve V1 phases.~~ **RESOLVED 2026-09-13, as part of M11 — Cross-Feature Security Audit.** `server/src/middleware/rateLimit.js` now covers `/api/auth/register`, `/login`, `/google`, plus every Community write endpoint (kudos, comments, comment likes, follow, reports) named in `08_COMMUNITY_PROPOSAL.md` §14. See `PROGRESS.md`'s M11 entry for full detail.
-- **A2 — Account-recovery flow for password-only accounts.** No forgot-password/email-reset flow exists; no email-sending infrastructure exists anywhere in the stack. Needs an email-service decision before implementation can start. **Still open.**
+- **A2 — Account-recovery flow for password-only accounts.** ~~No forgot-password/email-reset flow exists; no email-sending infrastructure exists anywhere in the stack. Needs an email-service decision before implementation can start.~~ **RESOLVED 2026-09-14.** `server/src/services/mailService.js` (generic SMTP via `nodemailer`, works with any provider) + `authService.js`'s `requestPasswordReset`/`resetPassword`. See `PROGRESS.md`'s dedicated checkpoint entry for full detail.
 
 ## B. Should Improve
 
@@ -21,14 +21,16 @@ Produced at the V1 completion checkpoint (2026-09-05); revised 2026-09-09 once t
 
 ## C. V1.1 / Product Improvements (personal-first, no identity change)
 
-- **Home page dashboard** — still the single highest-leverage, least-developed screen. Currently shows only an empty-state CTA regardless of activity history, despite `01_PRODUCT_SPEC.md` §7 describing recent activity / upcoming plans / highlights. Flagged since Phase 5 of V1, never revisited.
+- ~~**Home page dashboard**~~ **RESOLVED 2026-09-14.** See `PROGRESS.md`'s dedicated checkpoint entry.
 - Outdoor Journey / Playback (explicitly deferred from V1 Phase 8).
 - Bulk import.
-- Gear-picker pagination.
+- ~~**Gear-picker pagination.**~~ **RESOLVED 2026-09-14** — not via pagination in the end, but by raising the picker fetch limit (50 → 200, the picker fetches once with no in-picker pagination UI, so a hard 50-item cap silently made items 51+ unselectable) and adding the search + category filter to `ActivityForm.jsx`'s gear picker that `03_UX_DESIGN_SPEC.md` §21 always specified but that was never actually built there (`PackMyBagPage.jsx`'s picker already had it). Same fix applied to the destination picker on both `ActivityForm.jsx` and `PlannedActivityForm.jsx`, which had the identical 50-item cap.
 - Saved filter preferences.
 - Print/PDF export.
 - Personal notifications (distinct from Community notifications — e.g., a reminder about an upcoming planned activity; not currently scoped or designed, would need its own decision if pursued).
 - Currency flexibility (V1 is DZD-only by design).
+- ~~**Gear by store + spend-per-store.**~~ **RESOLVED 2026-09-14.** `GET /api/gear/stores` (grouped case-insensitively, sorted alphabetically), `GET /api/gear?store=X` (exact match, case-insensitive), store filter dropdown + summary line on the Gear Closet page. See `PROGRESS.md`'s dedicated checkpoint entry.
+- ~~**"Gear I Need to Buy" — a wishlist separate from the Gear Closet.**~~ **RESOLVED 2026-09-14.** New `GearWishlistItem` model with embedded `options`, full CRUD, and the purchase conversion exactly as specified (an option's own fields — not the wishlist item's generic name — pre-fill the new GearItem; the wishlist item is kept, not deleted, after purchase, mirroring PlannedActivity->Activity). Reachable as a "Need to Buy" tab on the Gear page. See `PROGRESS.md`'s dedicated checkpoint entry for full detail, including the one place this deliberately does NOT mirror the PlannedActivity pattern (one-click auto-creation of the GearItem, per the product owner's explicit "transformée/ajoutée directement" requirement, rather than a manual create-then-link step).
 
 ## D. Major Future Features
 

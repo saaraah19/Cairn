@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CairnMark, Wordmark } from '../components/Logo.jsx'
+import { Wordmark } from '../components/Logo.jsx'
 import { OutdoorsIcon, GearIcon, StatisticsIcon } from '../components/NavIcons.jsx'
 import { PlanIcon, DestinationIcon } from '../components/FeatureIcons.jsx'
 import './LandingPage.css'
@@ -41,33 +41,6 @@ const FEATURES = [
   },
 ]
 
-function HeroMark() {
-  return (
-    <svg
-      className="landing-hero-mark"
-      viewBox="0 0 360 300"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      {/* Faint topographic contour lines — subtle, one place only. */}
-      <g fill="none" stroke="var(--color-moss)" strokeWidth="1" opacity="0.18">
-        <path d="M20 250c60-40 100-40 160-10s140 10 160-30" />
-        <path d="M10 210c70-45 110-45 175-12s130 5 165-35" />
-        <path d="M30 285c55-30 95-30 150-5s125 10 155-25" />
-      </g>
-      <g transform="translate(60 90)">
-        <CairnMark size={64} />
-      </g>
-      <g transform="translate(160 40)">
-        <CairnMark size={92} />
-      </g>
-      <g transform="translate(270 110)">
-        <CairnMark size={50} />
-      </g>
-    </svg>
-  )
-}
-
 export function LandingPage() {
   return (
     <div className="landing">
@@ -83,24 +56,26 @@ export function LandingPage() {
         </nav>
       </header>
 
-      <section className="landing-hero">
-        <div className="landing-hero-text">
-          <h1>Your outdoor life, kept in one place.</h1>
-          <p className="landing-hero-sub">
-            Cairn is a personal outdoor journal for hikers, trekkers, and campers — plan a trip,
-            pack your bag, log what you did, and watch your history take shape. No feed, no
-            followers required, just yours.
-          </p>
-          <div className="landing-hero-actions">
-            <Link to="/register" className="landing-btn landing-btn-primary">
-              Sign up
-            </Link>
-            <Link to="/login" className="landing-btn landing-btn-secondary">
-              Log in
-            </Link>
+      <section className="landing-hero" style={{ backgroundImage: 'url(/hero.png)' }}>
+        <div className="landing-hero-scrim" />
+        <div className="landing-hero-inner">
+          <div className="landing-hero-text">
+            <h1>Your outdoor life, kept in one place.</h1>
+            <p className="landing-hero-sub">
+              Cairn is a personal outdoor journal for hikers, trekkers, and campers — plan a trip,
+              pack your bag, log what you did, and watch your history take shape. No feed, no
+              followers required, just yours.
+            </p>
+            <div className="landing-hero-actions">
+              <Link to="/register" className="landing-btn landing-btn-primary">
+                Sign up
+              </Link>
+              <Link to="/login" className="landing-btn landing-btn-secondary">
+                Log in
+              </Link>
+            </div>
           </div>
         </div>
-        <HeroMark />
       </section>
 
       <section className="landing-loop">
